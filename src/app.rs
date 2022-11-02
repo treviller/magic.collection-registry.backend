@@ -1,8 +1,6 @@
-use actix_web::dev::{Server, Service, ServiceFactory, ServiceRequest, ServiceResponse};
-use actix_web::{test, web, App, Error, HttpServer};
-use tracing::subscriber::set_global_default;
+use actix_web::dev::Server;
+use actix_web::{web, App, HttpServer};
 use tracing_actix_web::TracingLogger;
-use tracing_log::LogTracer;
 
 use crate::monitoring::{get_subscriber, initialize_subscriber};
 use crate::routes::authentication::login;

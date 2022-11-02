@@ -1,11 +1,16 @@
-use actix_web::dev::{Response, ServiceRequest};
 use actix_web::http::header::ContentType;
-use actix_web::{test, App, HttpRequest};
+use actix_web::{test, App};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use tracing_actix_web::TracingLogger;
 
-use magic_collection_registry_backend::app::{configure_routing, Application};
+use magic_collection_registry_backend::app::configure_routing;
+use magic_collection_registry_backend::domain::authentication::Claims;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
-use magic_collection_registry_backend::routes::authentication::login;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct LoginJsonResponse {
+    access_token: String,
+}
 
 #[actix_web::test]
 pub async fn login_should_return_200() {
@@ -25,6 +30,16 @@ pub async fn login_should_return_200() {
         }))
         .to_request();
     let response = test::call_service(&test_app, req).await;
+    assert!(response.status().is_success());
 
-    assert!(response.status().is_success())
+    let json: LoginJsonResponse = test::read_body_json(response).await;
+
+    let decoding_key = "testkey".as_ref();
+
+    let claims = decode::<Claims>(
+        json.access_token.as_str(),
+        &DecodingKey::from_secret(decoding_key),
+        &Validation::new(Algorithm::HS256),
+    )
+    .expect("Access token should be a valid JWT");
 }
