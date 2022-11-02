@@ -14,7 +14,12 @@ name = "magic-collection-registry-backend"
 
 [dependencies]
 actix-web = "4"
+secrecy = { version = "0.8", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-log = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "registry", "json"] }
 tracing-actix-web = "0.6"
+
+[dev-dependencies]
+serde_json = "1"
