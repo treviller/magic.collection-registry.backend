@@ -22,23 +22,33 @@ where
     serializer.serialize_str(value.expose_secret())
 }
 
-pub fn check_credentials(_password: Secret<String>) -> bool {
-    true
+pub struct AuthenticationService {
+    jwt_key: Secret<String>,
 }
 
-pub fn generate_jwt() -> AuthTokens {
-    let encoding_key = EncodingKey::from_secret("testkey".as_ref());
-    let current_timestamp = get_current_timestamp();
-    let claims = Claims {
-        sub: "123456789".into(),
-        iat: current_timestamp,
-        exp: current_timestamp + 3600,
-    };
-
-    let jwt = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
-        .expect("An error occurred during JWT encoding");
-
-    AuthTokens {
-        access_token: Secret::new(jwt),
+impl AuthenticationService {
+    pub fn new(jwt_key: Secret<String>) -> Self {
+        Self { jwt_key }
     }
+
+    pub fn generate_jwt(&self) -> AuthTokens {
+        let encoding_key = EncodingKey::from_secret(self.jwt_key.expose_secret().as_ref());
+        let current_timestamp = get_current_timestamp();
+        let claims = Claims {
+            sub: "123456789".into(),
+            iat: current_timestamp,
+            exp: current_timestamp + 3600,
+        };
+
+        let jwt = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
+            .expect("An error occurred during JWT encoding");
+
+        AuthTokens {
+            access_token: Secret::new(jwt),
+        }
+    }
+}
+
+pub fn check_credentials(_password: Secret<String>) -> bool {
+    true
 }
