@@ -1,10 +1,12 @@
 use actix_web::http::header::ContentType;
 use actix_web::{test, App};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use secrecy::ExposeSecret;
 use tracing_actix_web::TracingLogger;
 
 use magic_collection_registry_backend::app::{configure_routing, configure_services};
 use magic_collection_registry_backend::configuration::loader::get_configuration;
+use magic_collection_registry_backend::container::ServiceContainer;
 use magic_collection_registry_backend::domain::authentication::Claims;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
 
@@ -32,7 +34,7 @@ pub async fn login_should_return_200() {
         .uri("/login")
         .insert_header(ContentType::json())
         .set_json(serde_json::json!({
-            "login": "JohnDoe",
+            "login": "user1",
             "password": "test"
         }))
         .to_request();

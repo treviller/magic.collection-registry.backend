@@ -1,7 +1,7 @@
 use actix_web::{post, web, HttpResponse};
 use secrecy::Secret;
 
-use crate::domain::authentication::{check_credentials, AuthenticationService};
+use crate::domain::authentication::AuthenticationService;
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
@@ -15,7 +15,9 @@ pub async fn login(
     request_data: web::Json<LoginData>,
     authentication_service: web::Data<AuthenticationService>,
 ) -> HttpResponse {
-    check_credentials(request_data.0.password);
+    let user = authentication_service
+        .login_user(request_data.0.login, request_data.0.password)
+        .expect("No error for now");
 
-    HttpResponse::Ok().json(authentication_service.generate_jwt())
+    HttpResponse::Ok().json(authentication_service.generate_jwt(user))
 }
