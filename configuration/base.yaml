@@ -1,1 +1,2 @@
 jwt_key: "NpuaRPoDdCqGLxQgGEXQeSTgRGdjWZKLoB7fXjhZpaG5zBdYoyikkd"
+jwt_ttl: 3600

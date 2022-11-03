@@ -24,11 +24,12 @@ where
 
 pub struct AuthenticationService {
     jwt_key: Secret<String>,
+    jwt_ttl: u64,
 }
 
 impl AuthenticationService {
-    pub fn new(jwt_key: Secret<String>) -> Self {
-        Self { jwt_key }
+    pub fn new(jwt_key: Secret<String>, jwt_ttl: u64) -> Self {
+        Self { jwt_key, jwt_ttl }
     }
 
     pub fn generate_jwt(&self) -> AuthTokens {
@@ -37,7 +38,7 @@ impl AuthenticationService {
         let claims = Claims {
             sub: "123456789".into(),
             iat: current_timestamp,
-            exp: current_timestamp + 3600,
+            exp: current_timestamp + self.jwt_ttl,
         };
 
         let jwt = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
