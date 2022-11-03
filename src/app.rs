@@ -3,7 +3,7 @@ use actix_web::{web, App, HttpServer};
 use tracing_actix_web::TracingLogger;
 
 use crate::configuration::settings::Settings;
-use crate::domain::authentication::AuthenticationService;
+use crate::container::ServiceContainer;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
 use crate::routes::authentication::login;
 
@@ -26,13 +26,12 @@ impl Application {
     }
 
     fn create_server(configuration: Settings) -> Result<Server, std::io::Error> {
-        let authentication_service =
-            web::Data::new(AuthenticationService::new(configuration.jwt_key));
+        let container = ServiceContainer::new(configuration);
 
         let server = HttpServer::new(move || {
             App::new()
                 .wrap(TracingLogger::default())
-                .app_data(authentication_service.clone())
+                .configure(|cfg| configure_services(cfg, container.clone()))
                 .configure(configure_routing)
         })
         .bind(("127.0.0.1", 8080))?
@@ -46,8 +45,6 @@ pub fn configure_routing(cfg: &mut web::ServiceConfig) {
     cfg.service(login);
 }
 
-pub fn configure_services(cfg: &mut web::ServiceConfig, configuration: Settings) {
-    let authentication_service = web::Data::new(AuthenticationService::new(configuration.jwt_key));
-
-    cfg.app_data(authentication_service.clone());
+pub fn configure_services(cfg: &mut web::ServiceConfig, container: ServiceContainer) {
+    cfg.app_data(container.authentication_service);
 }

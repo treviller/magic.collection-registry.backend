@@ -19,11 +19,13 @@ pub async fn login_should_return_200() {
     initialize_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to build configuration.");
+    let container = ServiceContainer::new(configuration.clone());
+    let decoding_key = DecodingKey::from_secret(configuration.jwt_key.expose_secret().as_ref());
 
     let app = App::new()
         .wrap(TracingLogger::default())
         .configure(configure_routing)
-        .configure(|cfg| configure_services(cfg, configuration));
+        .configure(|cfg| configure_services(cfg, container));
     let test_app = test::init_service(app).await;
 
     let req = test::TestRequest::post()
@@ -38,12 +40,9 @@ pub async fn login_should_return_200() {
     assert!(response.status().is_success());
 
     let json: LoginJsonResponse = test::read_body_json(response).await;
-
-    let decoding_key = "testkey".as_ref();
-
     let claims = decode::<Claims>(
         json.access_token.as_str(),
-        &DecodingKey::from_secret(decoding_key),
+        &decoding_key,
         &Validation::new(Algorithm::HS256),
     )
     .expect("Access token should be a valid JWT");
