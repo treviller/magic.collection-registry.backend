@@ -1,10 +1,10 @@
-use crate::configuration::settings::AuthSettings;
 use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
 };
 use secrecy::{ExposeSecret, Secret};
 use serde::Serializer;
 
+use crate::configuration::settings::AuthSettings;
 use crate::domain::model::user::User;
 
 #[derive(serde::Serialize)]

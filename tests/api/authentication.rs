@@ -78,7 +78,7 @@ pub async fn get_profile_should_return_200() {
         .insert_header(ContentType::json())
         .insert_header((
             header::AUTHORIZATION,
-            token.access_token.expose_secret().as_str(),
+            format!("Bearer {}", token.access_token.expose_secret().as_str()),
         ))
         .to_request();
     let response = test::call_service(&test_app, req).await;

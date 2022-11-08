@@ -46,6 +46,8 @@ impl FromRequest for User {
                 .to_str()
                 .context("Authorization header contains invalid characters")?;
 
+            let authorization_value = authorization_value.trim_start_matches("Bearer ");
+
             let jwt_claims = authentication_service
                 .decode_jwt(authorization_value)
                 .context("Failed to decode and validate the jwt")
