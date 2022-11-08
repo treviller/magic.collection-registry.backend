@@ -1,22 +1,25 @@
-use jsonwebtoken::{encode, get_current_timestamp, Algorithm, EncodingKey, Header};
+use jsonwebtoken::{
+    decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+};
 use secrecy::{ExposeSecret, Secret};
 use serde::Serializer;
 
 use crate::domain::model::user::User;
+use crate::errors::domain::DomainError;
 use crate::provider::memory::user::UserMemoryProvider;
 use crate::provider::user::UserProvider;
 
 #[derive(serde::Serialize)]
 pub struct AuthTokens {
     #[serde(serialize_with = "serialize_jwt")]
-    access_token: Secret<String>,
+    pub access_token: Secret<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Claims {
-    sub: String,
-    iat: u64,
-    exp: u64,
+    pub sub: String,
+    pub iat: u64,
+    pub exp: u64,
 }
 
 fn serialize_jwt<S>(value: &Secret<String>, serializer: S) -> Result<S::Ok, S::Error>
