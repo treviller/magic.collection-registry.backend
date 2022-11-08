@@ -25,7 +25,7 @@ impl UserMemoryProvider {
 }
 
 impl UserProvider for UserMemoryProvider {
-    fn find_one_by_username(&self, username: String) -> Option<User> {
+    fn find_one_by_username(&self, username: &str) -> Option<User> {
         self.users.iter().find_map(|user| {
             if user.username == username {
                 return Some(user.clone());

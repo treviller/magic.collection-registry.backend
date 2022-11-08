@@ -17,6 +17,7 @@ actix-web = "4"
 anyhow = "1"
 config = "0.13"
 jsonwebtoken = "8"
+once_cell = "1.16"
 secrecy = { version = "0.8", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"

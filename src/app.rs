@@ -3,9 +3,8 @@ use actix_web::{web, App, HttpServer};
 use tracing_actix_web::TracingLogger;
 
 use crate::configuration::settings::Settings;
-use crate::container::ServiceContainer;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
-use crate::routes::authentication::login;
+use crate::routes::authentication::{get_profile, login};
 
 pub struct Application {
     server: Server,
@@ -26,12 +25,12 @@ impl Application {
     }
 
     fn create_server(configuration: Settings) -> Result<Server, std::io::Error> {
-        let container = ServiceContainer::new(configuration);
+        let config_data = web::Data::new(configuration.clone());
 
         let server = HttpServer::new(move || {
             App::new()
                 .wrap(TracingLogger::default())
-                .configure(|cfg| configure_services(cfg, container.clone()))
+                .app_data(config_data.clone())
                 .configure(configure_routing)
         })
         .bind(("127.0.0.1", 8080))?
@@ -43,8 +42,4 @@ impl Application {
 
 pub fn configure_routing(cfg: &mut web::ServiceConfig) {
     cfg.service(login);
-}
-
-pub fn configure_services(cfg: &mut web::ServiceConfig, container: ServiceContainer) {
-    cfg.app_data(container.authentication_service);
 }

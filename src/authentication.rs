@@ -5,9 +5,6 @@ use secrecy::{ExposeSecret, Secret};
 use serde::Serializer;
 
 use crate::domain::model::user::User;
-use crate::errors::domain::DomainError;
-use crate::provider::memory::user::UserMemoryProvider;
-use crate::provider::user::UserProvider;
 
 #[derive(serde::Serialize)]
 pub struct AuthTokens {
@@ -30,18 +27,13 @@ where
 }
 
 pub struct AuthenticationService {
-    user_provider: UserMemoryProvider,
     jwt_key: Secret<String>,
     jwt_ttl: u64,
 }
 
 impl AuthenticationService {
-    pub fn new(user_provider: UserMemoryProvider, jwt_key: Secret<String>, jwt_ttl: u64) -> Self {
-        Self {
-            user_provider,
-            jwt_key,
-            jwt_ttl,
-        }
+    pub fn new(jwt_key: Secret<String>, jwt_ttl: u64) -> Self {
+        Self { jwt_key, jwt_ttl }
     }
 
     pub fn generate_jwt(&self, user: User) -> AuthTokens {
@@ -61,15 +53,12 @@ impl AuthenticationService {
         }
     }
 
-    pub fn login_user(&self, username: String, password: Secret<String>) -> Result<User, String> {
-        let user = match self.user_provider.find_one_by_username(username) {
-            Some(user) => user,
-            None => return Err("No user found.".into()),
-        };
+    pub fn decode_jwt(&self, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+        let decoding_key = DecodingKey::from_secret(self.jwt_key.expose_secret().as_ref());
+        let token_data =
+            decode::<Claims>(token, &decoding_key, &Validation::new(Algorithm::HS256))?;
 
-        self.check_credentials(&user, password);
-
-        Ok(user)
+        Ok(token_data.claims)
     }
 
     pub fn check_credentials(&self, user: &User, _password: Secret<String>) -> bool {

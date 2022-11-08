@@ -1,7 +1,9 @@
 use actix_web::{post, web, HttpResponse};
 use secrecy::Secret;
 
-use crate::domain::authentication::AuthenticationService;
+use crate::authentication::AuthenticationService;
+use crate::configuration::settings::Settings;
+use crate::domain::user::UserService;
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
@@ -9,15 +11,20 @@ pub struct LoginData {
     password: Secret<String>,
 }
 
-#[tracing::instrument(name = "Login request", skip(request_data, authentication_service))]
-#[post("/login")]
+#[tracing::instrument(name = "Login request", skip(request_data, config))]
+#[post("/api/login")]
 pub async fn login(
     request_data: web::Json<LoginData>,
-    authentication_service: web::Data<AuthenticationService>,
+    config: web::Data<Settings>,
 ) -> HttpResponse {
-    let user = authentication_service
-        .login_user(request_data.0.login, request_data.0.password)
-        .expect("No error for now");
+    let authentication_service = AuthenticationService::new(config.jwt_key.clone(), config.jwt_ttl);
+    let user_service = UserService::new();
+
+    let user = user_service
+        .get_user_from_username(&request_data.0.login)
+        .expect("Unable to found user with username");
+
+    authentication_service.check_credentials(&user, request_data.0.password);
 
     HttpResponse::Ok().json(authentication_service.generate_jwt(user))
 }
