@@ -27,16 +27,12 @@ impl FromRequest for User {
         let req = req.clone();
 
         Box::pin(async move {
-            let jwt_key = req
+            let auth_settings = req
                 .app_data::<Data<Settings>>()
-                .map(|settings| &settings.jwt_key)
-                .unwrap();
-            let jwt_ttl = req
-                .app_data::<Data<Settings>>()
-                .map(|settings| settings.jwt_ttl)
+                .map(|settings| settings.auth.clone())
                 .unwrap();
 
-            let authentication_service = AuthenticationService::new(jwt_key.clone(), jwt_ttl);
+            let authentication_service = AuthenticationService::new(auth_settings);
             let authorization_header_value = match req.headers().get(header::AUTHORIZATION) {
                 Some(value) => value,
                 None => {

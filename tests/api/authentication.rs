@@ -46,8 +46,7 @@ pub async fn login_should_return_200() {
     let response = test::call_service(&test_app, req).await;
     assert!(response.status().is_success());
 
-    let authentication_service =
-        AuthenticationService::new(configuration.jwt_key, configuration.jwt_ttl);
+    let authentication_service = AuthenticationService::new(configuration.auth);
     let json: LoginJsonResponse = test::read_body_json(response).await;
 
     authentication_service
@@ -61,8 +60,7 @@ pub async fn get_profile_should_return_200() {
 
     let configuration = get_configuration().expect("Failed to build configuration.");
     let config_data = web::Data::new(configuration.clone());
-    let authentication_service =
-        AuthenticationService::new(configuration.jwt_key, configuration.jwt_ttl);
+    let authentication_service = AuthenticationService::new(configuration.auth);
 
     let app = App::new()
         .wrap(TracingLogger::default())

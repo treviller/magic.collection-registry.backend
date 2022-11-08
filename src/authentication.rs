@@ -1,3 +1,4 @@
+use crate::configuration::settings::AuthSettings;
 use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
 };
@@ -32,8 +33,11 @@ pub struct AuthenticationService {
 }
 
 impl AuthenticationService {
-    pub fn new(jwt_key: Secret<String>, jwt_ttl: u64) -> Self {
-        Self { jwt_key, jwt_ttl }
+    pub fn new(settings: AuthSettings) -> Self {
+        Self {
+            jwt_key: settings.jwt_key,
+            jwt_ttl: settings.jwt_ttl,
+        }
     }
 
     pub fn generate_jwt(&self, user: User) -> AuthTokens {

@@ -19,7 +19,7 @@ pub async fn login(
     request_data: web::Json<LoginData>,
     config: web::Data<Settings>,
 ) -> HttpResponse {
-    let authentication_service = AuthenticationService::new(config.jwt_key.clone(), config.jwt_ttl);
+    let authentication_service = AuthenticationService::new(config.auth.clone());
     let user_service = UserService::new();
 
     let user = user_service
