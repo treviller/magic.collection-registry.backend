@@ -41,5 +41,5 @@ impl Application {
 }
 
 pub fn configure_routing(cfg: &mut web::ServiceConfig) {
-    cfg.service(login);
+    cfg.service(login).service(get_profile);
 }

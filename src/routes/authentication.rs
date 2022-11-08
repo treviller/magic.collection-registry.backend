@@ -1,9 +1,11 @@
-use actix_web::{post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
 use secrecy::Secret;
 
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
+use crate::domain::model::user::User;
 use crate::domain::user::UserService;
+use crate::dto::user::UserDto;
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
@@ -27,4 +29,9 @@ pub async fn login(
     authentication_service.check_credentials(&user, request_data.0.password);
 
     HttpResponse::Ok().json(authentication_service.generate_jwt(user))
+}
+
+#[get("/api/profile")]
+pub async fn get_profile(user: User) -> HttpResponse {
+    HttpResponse::Ok().json(UserDto::from_user(user))
 }
