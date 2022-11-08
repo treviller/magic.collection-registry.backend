@@ -57,3 +57,15 @@ pub async fn get_profile_should_return_200() {
     let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert!(response.status().is_success());
 }
+
+#[actix_web::test]
+pub async fn get_profile_without_jwt_should_return_401() {
+    let configuration = get_configuration().expect("Failed to build configuration.");
+
+    let req = test::TestRequest::get()
+        .uri("/api/profile")
+        .insert_header(ContentType::json());
+
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    assert_eq!(response.status().as_u16(), 401);
+}

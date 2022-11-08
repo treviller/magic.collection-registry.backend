@@ -1,8 +1,10 @@
 use std::fmt::Formatter;
 
-use actix_web::ResponseError;
+use actix_web::body::BoxBody;
+use actix_web::http::header::ContentType;
+use actix_web::{HttpResponse, ResponseError};
 
-use crate::domain::model::error_chain_fmt;
+use crate::errors::{error_chain_fmt, FormattedResponseError};
 
 #[derive(thiserror::Error)]
 pub enum JwtError {
@@ -18,4 +20,25 @@ impl std::fmt::Debug for JwtError {
     }
 }
 
-impl ResponseError for JwtError {}
+impl FormattedResponseError for JwtError {
+    fn error_code(&self) -> String {
+        match self {
+            JwtError::InvalidToken(_) => "invalid_token".into(),
+            JwtError::TokenExpired(_) => "token_expired".into(),
+        }
+    }
+
+    fn error_message(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl ResponseError for JwtError {
+    fn error_response(&self) -> HttpResponse<BoxBody> {
+        let mut response = HttpResponse::Unauthorized();
+
+        response.insert_header(ContentType::json());
+
+        self.format_response(&mut response, self.error_code(), self.error_message())
+    }
+}
