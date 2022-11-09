@@ -41,7 +41,10 @@ impl Application {
 }
 
 pub fn configure_routing(cfg: &mut web::ServiceConfig) {
-    cfg.service(login)
-        .service(get_profile)
-        .service(forgotten_password);
+    cfg.service(
+        web::scope("/api")
+            .service(login)
+            .service(get_profile)
+            .service(forgotten_password),
+    );
 }

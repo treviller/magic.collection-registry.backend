@@ -19,7 +19,7 @@ pub struct LoginData {
 }
 
 #[tracing::instrument(name = "Login request", skip(request_data, config))]
-#[post("/api/login")]
+#[post("/login")]
 pub async fn login(
     request_data: web::Json<LoginData>,
     config: web::Data<Settings>,
@@ -49,7 +49,7 @@ pub struct ForgottenPasswordData {
 }
 
 #[tracing::instrument(name = "Reset password", skip(request_data, config))]
-#[post("/api/password-reset")]
+#[post("/password-reset")]
 pub async fn forgotten_password(
     request_data: web::Json<ForgottenPasswordData>,
     config: web::Data<Settings>,
@@ -70,7 +70,7 @@ pub async fn forgotten_password(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[get("/api/profile")]
+#[get("/profile")]
 pub async fn get_profile(user: User) -> HttpResponse {
     HttpResponse::Ok().json(UserDto::from_user(user))
 }
