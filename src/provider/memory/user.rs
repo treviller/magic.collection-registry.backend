@@ -13,11 +13,11 @@ impl UserMemoryProvider {
             users: vec![
                 User {
                     username: "user1".into(),
-                    password: Secret::new("test".into()),
+                    password: Secret::new("$argon2id$v=19$m=4096,t=3,p=1$njFuptpoWRAhlPsfwK5IYA$eJJGq0hW6/IMDKsVal7mxSK/YlOvI12JyxcETS5cYPQ".into()),
                 },
                 User {
                     username: "user2".into(),
-                    password: Secret::new("toto".into()),
+                    password: Secret::new("$argon2id$v=19$m=4096,t=3,p=1$/rG29LlMB72wf9+m71cauQ$WL0HiAvPMMJooHzxuwweoINv+Rv8lU5yT8XOHWOrH5E".into()),
                 },
             ],
         }

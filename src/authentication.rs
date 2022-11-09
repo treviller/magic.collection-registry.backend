@@ -1,4 +1,6 @@
 use anyhow::Context;
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
 };
@@ -70,11 +72,28 @@ impl AuthenticationService {
         Ok(token_data.claims)
     }
 
+    pub fn hash_password(&self, password: &Secret<String>) -> Secret<String> {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+        let password_hash = Argon2::default()
+            .hash_password(password.expose_secret().as_bytes(), &salt)
+            .unwrap()
+            .to_string();
+
+        Secret::new(password_hash)
+    }
+
     pub fn check_credentials(
         &self,
         user: &User,
         password: Secret<String>,
     ) -> Result<(), AuthError> {
-        Ok(())
+        let expected_password_hash = PasswordHash::new(&user.password.expose_secret())
+            .context("Failed to parse hash in PHC string format")
+            .map_err(AuthError::UnexpectedError)?;
+
+        Argon2::default()
+            .verify_password(password.expose_secret().as_bytes(), &expected_password_hash)
+            .context("Invalid password.")
+            .map_err(AuthError::InvalidCredentials)
     }
 }
