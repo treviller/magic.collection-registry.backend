@@ -3,8 +3,7 @@ use actix_web::{test, web, App};
 use once_cell::sync::Lazy;
 use secrecy::Secret;
 use tracing_actix_web::TracingLogger;
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
+use wiremock::MockServer;
 
 use magic_collection_registry_backend::app::configure_routing;
 use magic_collection_registry_backend::authentication::AuthenticationService;

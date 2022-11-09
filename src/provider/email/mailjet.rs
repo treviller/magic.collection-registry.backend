@@ -4,6 +4,7 @@ use serde::ser::SerializeStruct;
 use serde::Serialize;
 
 use crate::configuration::settings::EmailSettings;
+use crate::domain::model::user_email::UserEmail;
 
 pub struct MailjetClient {
     sender: String,
@@ -28,7 +29,7 @@ impl MailjetClient {
 
     pub async fn send_email(
         &self,
-        recipient_email: &str,
+        recipient_email: &UserEmail,
         subject: &str,
         html_content: &str,
         text_content: &str,
@@ -85,7 +86,7 @@ impl<'a> Serialize for SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claim::assert_err;
+    use claim::{assert_err, assert_ok};
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
@@ -94,6 +95,7 @@ mod tests {
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
     use crate::configuration::settings::EmailSettings;
+    use crate::domain::model::user_email::UserEmail;
     use crate::provider::email::mailjet::MailjetClient;
 
     struct SendEmailBodyMatcher;
@@ -124,6 +126,8 @@ mod tests {
 
         let email_client = init_email_client(mock_server.uri());
         let result = send_email_request(&email_client).await;
+
+        assert_ok!(result);
     }
 
     #[actix_web::test]
@@ -177,7 +181,7 @@ mod tests {
     }
 
     async fn send_email_request(email_client: &MailjetClient) -> Result<(), reqwest::Error> {
-        let subscriber_email: String = SafeEmail().fake();
+        let subscriber_email = UserEmail::parse(SafeEmail().fake()).unwrap();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 

@@ -7,8 +7,6 @@ use wiremock::{Mock, ResponseTemplate};
 
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::loader::get_configuration;
-use magic_collection_registry_backend::provider::memory::user::UserMemoryProvider;
-use magic_collection_registry_backend::provider::user::UserProvider;
 
 use crate::helpers;
 use crate::helpers::{generate_access_token, mock_email_server};

@@ -5,6 +5,7 @@ use secrecy::Secret;
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::model::user::User;
+use crate::domain::model::user_email::UserEmail;
 use crate::domain::user::UserService;
 use crate::dto::user::UserDto;
 use crate::errors::api::forgotten_password::ForgottenPasswordError;
@@ -56,8 +57,11 @@ pub async fn forgotten_password(
     let email_client = MailjetClient::new(config.email.clone());
     let html_content = r#"<p><span>Une demande de réinitialisation de mot de passe a été effectuée.</span><span>Cliquez sur ce <a href="" target="_blank">lien</a> pour réinitialiser votre mot de passe.</p>"#;
 
+    let user_email =
+        UserEmail::parse(request_data.0.email).map_err(ForgottenPasswordError::ValidationError)?;
+
     email_client.send_email(
-        request_data.0.email.as_str(),
+        &user_email,
         "Demande de réinitialisation de mot de passe".into(),
         html_content,
         "Une demande de réinitialisation de mot de passe a été effectuée. Cliquez sur ce lien pour réinitialiser votre mot de passe.".into(),

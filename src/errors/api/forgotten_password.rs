@@ -2,6 +2,7 @@ use std::fmt::Formatter;
 
 use actix_web::body::BoxBody;
 use actix_web::http::header::ContentType;
+use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 
 use crate::errors::{error_chain_fmt, FormattedResponseError};
@@ -10,6 +11,8 @@ use crate::errors::{error_chain_fmt, FormattedResponseError};
 pub enum ForgottenPasswordError {
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
+    #[error("{0}")]
+    ValidationError(String),
 }
 
 impl std::fmt::Debug for ForgottenPasswordError {
@@ -20,7 +23,10 @@ impl std::fmt::Debug for ForgottenPasswordError {
 
 impl FormattedResponseError for ForgottenPasswordError {
     fn error_code(&self) -> String {
-        "internal_error".into()
+        match self {
+            ForgottenPasswordError::ValidationError(_) => "invalid_email".into(),
+            ForgottenPasswordError::UnexpectedError(_) => "internal_error".into(),
+        }
     }
 
     fn error_message(&self) -> String {
@@ -29,8 +35,15 @@ impl FormattedResponseError for ForgottenPasswordError {
 }
 
 impl ResponseError for ForgottenPasswordError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            ForgottenPasswordError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            ForgottenPasswordError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
     fn error_response(&self) -> HttpResponse<BoxBody> {
-        let mut response = HttpResponse::InternalServerError();
+        let mut response = HttpResponse::build(self.status_code());
 
         response.insert_header(ContentType::json());
 
