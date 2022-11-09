@@ -105,3 +105,57 @@ pub async fn forgotten_password_should_send_email() {
         helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
     assert!(response.status().is_success());
 }
+
+#[actix_web::test]
+pub async fn reset_password_should_return_200_with_valid_token() {
+    let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
+    let configuration = get_configuration().expect("Failed to build configuration.");
+    let memory_storage = Mutex::new(MemoryStorage::new());
+
+    let req = test::TestRequest::put()
+        .uri(&format!("/api/password-reset/{}", token))
+        .insert_header(ContentType::json())
+        .set_json(serde_json::json!({
+            "password": "nosecret"
+        }));
+
+    let response =
+        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    assert!(response.status().is_success());
+}
+
+#[actix_web::test]
+pub async fn reset_password_should_return_400_with_invalid_token() {
+    let token = "invalidtoken";
+    let configuration = get_configuration().expect("Failed to build configuration.");
+    let memory_storage = Mutex::new(MemoryStorage::new());
+
+    let req = test::TestRequest::put()
+        .uri(&format!("/api/password-reset/{}", token))
+        .insert_header(ContentType::json())
+        .set_json(serde_json::json!({
+            "password": "nosecret"
+        }));
+
+    let response =
+        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    assert_eq!(response.status().as_u16(), 400);
+}
+
+#[actix_web::test]
+pub async fn reset_password_should_return_400_with_invalid_payload() {
+    let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
+    let configuration = get_configuration().expect("Failed to build configuration.");
+    let memory_storage = Mutex::new(MemoryStorage::new());
+
+    let req = test::TestRequest::put()
+        .uri(&format!("/api/password-reset/{}", token))
+        .insert_header(ContentType::json())
+        .set_json(serde_json::json!({
+            "notusedkey": "blabla"
+        }));
+
+    let response =
+        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    assert_eq!(response.status().as_u16(), 400);
+}

@@ -7,6 +7,7 @@ use tracing_actix_web::TracingLogger;
 use crate::configuration::settings::Settings;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
 use crate::provider::memory::MemoryStorage;
+use crate::routes::authentication::{forgotten_password, get_profile, login, reset_password};
 
 pub struct Application {
     server: Server,
@@ -56,5 +57,6 @@ pub fn configure_routing(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(get_profile)
             .service(forgotten_password)
+            .service(reset_password),
     );
 }

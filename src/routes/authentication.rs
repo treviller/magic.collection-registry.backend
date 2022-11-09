@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, put, web, HttpResponse};
 use anyhow::Context;
 use secrecy::Secret;
 use uuid::Uuid;
@@ -8,10 +8,12 @@ use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::model::user::User;
 use crate::domain::model::user_email::UserEmail;
+use crate::domain::token::TokenService;
 use crate::domain::user::UserService;
 use crate::dto::user::UserDto;
 use crate::errors::api::forgotten_password::ForgottenPasswordError;
 use crate::errors::api::login::LoginError;
+use crate::errors::api::reset_password::ResetPasswordError;
 use crate::provider::email::mailjet::MailjetClient;
 
 #[derive(serde::Deserialize)]
@@ -69,6 +71,29 @@ pub async fn forgotten_password(
         html_content,
         "Une demande de réinitialisation de mot de passe a été effectuée. Cliquez sur ce lien pour réinitialiser votre mot de passe.".into(),
     ).await.context("An error occurred during email sending.").map_err(ForgottenPasswordError::UnexpectedError)?;
+
+    Ok(HttpResponse::NoContent().finish())
+}
+
+#[derive(serde::Deserialize)]
+pub struct ResetPasswordData {
+    password: Secret<String>,
+}
+
+#[tracing::instrument(name = "Reset password", skip(request_data, config, storage))]
+#[put("/password-reset/{token}")]
+pub async fn reset_password(
+    token: web::Path<String>,
+    request_data: web::Json<ResetPasswordData>,
+    storage: web::Data<MutStorage>,
+    config: web::Data<Settings>,
+) -> Result<HttpResponse, ResetPasswordError> {
+    let mut token_service = TokenService::new(&storage.storage, &config);
+    let token_id = Uuid::parse_str(token.as_str())
+        .context("Invalid token id")
+        .map_err(ResetPasswordError::InvalidToken)?;
+
+    token_service.reset_user_password(token_id, &request_data.0.password);
 
     Ok(HttpResponse::NoContent().finish())
 }
