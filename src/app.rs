@@ -1,13 +1,19 @@
+use std::sync::Mutex;
+
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use tracing_actix_web::TracingLogger;
 
 use crate::configuration::settings::Settings;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
-use crate::routes::authentication::{forgotten_password, get_profile, login};
+use crate::provider::memory::MemoryStorage;
 
 pub struct Application {
     server: Server,
+}
+
+pub struct MutStorage {
+    pub storage: Mutex<MemoryStorage>,
 }
 
 impl Application {
@@ -26,11 +32,15 @@ impl Application {
 
     fn create_server(configuration: Settings) -> Result<Server, std::io::Error> {
         let config_data = web::Data::new(configuration.clone());
+        let memory_storage = web::Data::new(MutStorage {
+            storage: Mutex::new(MemoryStorage::new()),
+        });
 
         let server = HttpServer::new(move || {
             App::new()
                 .wrap(TracingLogger::default())
                 .app_data(config_data.clone())
+                .app_data(memory_storage.clone())
                 .configure(configure_routing)
         })
         .bind(("127.0.0.1", 8080))?
@@ -45,6 +55,6 @@ pub fn configure_routing(cfg: &mut web::ServiceConfig) {
         web::scope("/api")
             .service(login)
             .service(get_profile)
-            .service(forgotten_password),
+            .service(forgotten_password)
     );
 }

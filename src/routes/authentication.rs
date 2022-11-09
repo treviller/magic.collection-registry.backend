@@ -1,7 +1,9 @@
 use actix_web::{get, post, web, HttpResponse};
 use anyhow::Context;
 use secrecy::Secret;
+use uuid::Uuid;
 
+use crate::app::MutStorage;
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::model::user::User;
@@ -18,14 +20,15 @@ pub struct LoginData {
     password: Secret<String>,
 }
 
-#[tracing::instrument(name = "Login request", skip(request_data, config))]
+#[tracing::instrument(name = "Login request", skip(request_data, config, storage))]
 #[post("/login")]
 pub async fn login(
     request_data: web::Json<LoginData>,
     config: web::Data<Settings>,
+    storage: web::Data<MutStorage>,
 ) -> Result<HttpResponse, LoginError> {
     let authentication_service = AuthenticationService::new(config.auth.clone());
-    let user_service = UserService::new();
+    let user_service = UserService::new(&storage.storage);
 
     let user = user_service
         .get_user_from_username(&request_data.0.login)
@@ -67,7 +70,7 @@ pub async fn forgotten_password(
         "Une demande de réinitialisation de mot de passe a été effectuée. Cliquez sur ce lien pour réinitialiser votre mot de passe.".into(),
     ).await.context("An error occurred during email sending.").map_err(ForgottenPasswordError::UnexpectedError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::NoContent().finish())
 }
 
 #[get("/profile")]

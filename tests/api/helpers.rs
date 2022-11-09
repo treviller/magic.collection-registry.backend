@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
 use once_cell::sync::Lazy;
@@ -5,11 +7,12 @@ use secrecy::Secret;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
 
-use magic_collection_registry_backend::app::configure_routing;
+use magic_collection_registry_backend::app::{configure_routing, MutStorage};
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::settings::Settings;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
 use magic_collection_registry_backend::provider::memory::user::UserMemoryProvider;
+use magic_collection_registry_backend::provider::memory::MemoryStorage;
 use magic_collection_registry_backend::provider::user::UserProvider;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -19,14 +22,17 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 
 pub async fn init_test_app_and_make_request(
     configuration: Settings,
+    storage: Mutex<MemoryStorage>,
     request: test::TestRequest,
 ) -> ServiceResponse {
     Lazy::force(&TRACING);
     let config_data = web::Data::new(configuration);
+    let storage = web::Data::new(MutStorage { storage });
 
     let app = App::new()
         .wrap(TracingLogger::default())
         .app_data(config_data.clone())
+        .app_data(storage.clone())
         .configure(configure_routing);
 
     let test_app = test::init_service(app).await;
@@ -44,9 +50,9 @@ pub async fn mock_email_server(config: &mut Settings) -> MockServer {
     email_server
 }
 
-pub fn generate_access_token(config: &Settings) -> Secret<String> {
+pub fn generate_access_token(config: &Settings, storage: &Mutex<MemoryStorage>) -> Secret<String> {
     let authentication_service = AuthenticationService::new(config.auth.clone());
-    let user_provider = UserMemoryProvider::new();
+    let user_provider = UserMemoryProvider::new(storage);
     let token = authentication_service
         .generate_jwt(user_provider.find_one_by_username("user1".into()).unwrap())
         .unwrap();

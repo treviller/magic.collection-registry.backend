@@ -7,7 +7,9 @@ use actix_web::web::Data;
 use actix_web::{FromRequest, HttpRequest};
 use anyhow::{anyhow, Context};
 use secrecy::Secret;
+use uuid::Uuid;
 
+use crate::app::MutStorage;
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::user::UserService;
@@ -15,6 +17,7 @@ use crate::errors::jwt::JwtError;
 
 #[derive(Clone)]
 pub struct User {
+    pub id: Uuid,
     pub username: String,
     pub password: Secret<String>,
 }
@@ -30,6 +33,10 @@ impl FromRequest for User {
             let auth_settings = req
                 .app_data::<Data<Settings>>()
                 .map(|settings| settings.auth.clone())
+                .unwrap();
+            let storage = req
+                .app_data::<Data<MutStorage>>()
+                .map(|storage| storage.clone())
                 .unwrap();
 
             let authentication_service = AuthenticationService::new(auth_settings);
@@ -53,7 +60,7 @@ impl FromRequest for User {
                 .context("Failed to decode and validate the jwt")
                 .map_err(JwtError::InvalidToken)?;
 
-            let user_service = UserService::new();
+            let user_service = UserService::new(&storage.storage);
 
             user_service
                 .get_user_from_username(&jwt_claims.sub)
