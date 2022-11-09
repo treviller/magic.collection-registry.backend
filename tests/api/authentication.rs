@@ -2,6 +2,8 @@ use actix_web::http::header;
 use actix_web::http::header::ContentType;
 use actix_web::test;
 use secrecy::ExposeSecret;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, ResponseTemplate};
 
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::loader::get_configuration;
@@ -9,6 +11,7 @@ use magic_collection_registry_backend::provider::memory::user::UserMemoryProvide
 use magic_collection_registry_backend::provider::user::UserProvider;
 
 use crate::helpers;
+use crate::helpers::{generate_access_token, mock_email_server};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct LoginJsonResponse {
@@ -41,18 +44,18 @@ pub async fn login_should_return_200() {
 #[actix_web::test]
 pub async fn get_profile_should_return_200() {
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let authentication_service = AuthenticationService::new(configuration.auth.clone());
-    let user_provider = UserMemoryProvider::new();
-    let token = authentication_service
-        .generate_jwt(user_provider.find_one_by_username("user1".into()).unwrap())
-        .unwrap();
 
     let req = test::TestRequest::get()
         .uri("/api/profile")
         .insert_header(ContentType::json())
         .insert_header((
             header::AUTHORIZATION,
-            format!("Bearer {}", token.access_token.expose_secret().as_str()),
+            format!(
+                "Bearer {}",
+                generate_access_token(&configuration)
+                    .expose_secret()
+                    .as_str()
+            ),
         ));
 
     let response = helpers::init_test_app_and_make_request(configuration, req).await;
@@ -69,4 +72,27 @@ pub async fn get_profile_without_jwt_should_return_401() {
 
     let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert_eq!(response.status().as_u16(), 401);
+}
+
+#[actix_web::test]
+pub async fn forgotten_password_should_send_email() {
+    let mut configuration = get_configuration().expect("Failed to build configuration.");
+    let email_server = mock_email_server(&mut configuration).await;
+
+    Mock::given(path("/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&email_server)
+        .await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/password-reset")
+        .insert_header(ContentType::json())
+        .set_json(serde_json::json!({
+            "email": "test@email.com"
+        }));
+
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    assert!(response.status().is_success());
 }

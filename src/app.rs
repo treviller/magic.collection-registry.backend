@@ -4,7 +4,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::configuration::settings::Settings;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
-use crate::routes::authentication::{get_profile, login};
+use crate::routes::authentication::{forgotten_password, get_profile, login};
 
 pub struct Application {
     server: Server,
@@ -41,5 +41,7 @@ impl Application {
 }
 
 pub fn configure_routing(cfg: &mut web::ServiceConfig) {
-    cfg.service(login).service(get_profile);
+    cfg.service(login)
+        .service(get_profile)
+        .service(forgotten_password);
 }

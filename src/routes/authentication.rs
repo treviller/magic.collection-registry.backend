@@ -7,7 +7,9 @@ use crate::configuration::settings::Settings;
 use crate::domain::model::user::User;
 use crate::domain::user::UserService;
 use crate::dto::user::UserDto;
+use crate::errors::api::forgotten_password::ForgottenPasswordError;
 use crate::errors::api::login::LoginError;
+use crate::provider::email::mailjet::MailjetClient;
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
@@ -38,6 +40,30 @@ pub async fn login(
         .map_err(|e| LoginError::from(e))?;
 
     Ok(HttpResponse::Ok().json(tokens))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ForgottenPasswordData {
+    email: String,
+}
+
+#[tracing::instrument(name = "Reset password", skip(request_data, config))]
+#[post("/api/password-reset")]
+pub async fn forgotten_password(
+    request_data: web::Json<ForgottenPasswordData>,
+    config: web::Data<Settings>,
+) -> Result<HttpResponse, ForgottenPasswordError> {
+    let email_client = MailjetClient::new(config.email.clone());
+    let html_content = r#"<p><span>Une demande de réinitialisation de mot de passe a été effectuée.</span><span>Cliquez sur ce <a href="" target="_blank">lien</a> pour réinitialiser votre mot de passe.</p>"#;
+
+    email_client.send_email(
+        request_data.0.email.as_str(),
+        "Demande de réinitialisation de mot de passe".into(),
+        html_content,
+        "Une demande de réinitialisation de mot de passe a été effectuée. Cliquez sur ce lien pour réinitialiser votre mot de passe.".into(),
+    ).await.context("An error occurred during email sending.").map_err(ForgottenPasswordError::UnexpectedError)?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[get("/api/profile")]
