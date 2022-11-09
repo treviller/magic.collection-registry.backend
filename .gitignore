@@ -1,3 +1,7 @@
 /target
 
 .idea/
+
+configuration/local.yaml
+
+configuration/prod.yaml

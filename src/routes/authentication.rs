@@ -1,6 +1,6 @@
 use actix_web::{get, post, web, HttpResponse};
 use anyhow::Context;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::Secret;
 
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
