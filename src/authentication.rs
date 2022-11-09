@@ -1,3 +1,4 @@
+use anyhow::Context;
 use jsonwebtoken::{
     decode, encode, get_current_timestamp, Algorithm, DecodingKey, EncodingKey, Header, Validation,
 };
@@ -6,6 +7,8 @@ use serde::Serializer;
 
 use crate::configuration::settings::AuthSettings;
 use crate::domain::model::user::User;
+use crate::errors::auth::AuthError;
+use crate::errors::jwt::JwtError;
 
 #[derive(serde::Serialize)]
 pub struct AuthTokens {
@@ -40,7 +43,7 @@ impl AuthenticationService {
         }
     }
 
-    pub fn generate_jwt(&self, user: User) -> AuthTokens {
+    pub fn generate_jwt(&self, user: User) -> Result<AuthTokens, AuthError> {
         let encoding_key = EncodingKey::from_secret(self.jwt_key.expose_secret().as_ref());
         let current_timestamp = get_current_timestamp();
         let claims = Claims {
@@ -50,22 +53,28 @@ impl AuthenticationService {
         };
 
         let jwt = encode(&Header::new(Algorithm::HS256), &claims, &encoding_key)
-            .expect("An error occurred during JWT encoding");
+            .context("Failed to encode JWT.")
+            .map_err(AuthError::UnexpectedError)?;
 
-        AuthTokens {
+        Ok(AuthTokens {
             access_token: Secret::new(jwt),
-        }
+        })
     }
 
-    pub fn decode_jwt(&self, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    pub fn decode_jwt(&self, token: &str) -> Result<Claims, JwtError> {
         let decoding_key = DecodingKey::from_secret(self.jwt_key.expose_secret().as_ref());
-        let token_data =
-            decode::<Claims>(token, &decoding_key, &Validation::new(Algorithm::HS256))?;
+        let token_data = decode::<Claims>(token, &decoding_key, &Validation::new(Algorithm::HS256))
+            .context("Failed to decode JWT")
+            .map_err(JwtError::InvalidToken)?;
 
         Ok(token_data.claims)
     }
 
-    pub fn check_credentials(&self, user: &User, _password: Secret<String>) -> bool {
-        true
+    pub fn check_credentials(
+        &self,
+        user: &User,
+        password: Secret<String>,
+    ) -> Result<(), AuthError> {
+        Ok(())
     }
 }

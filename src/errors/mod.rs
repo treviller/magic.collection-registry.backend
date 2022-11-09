@@ -1,6 +1,8 @@
 use actix_web::body::BoxBody;
 use actix_web::{HttpResponse, HttpResponseBuilder};
 
+pub mod api;
+pub mod auth;
 pub mod domain;
 pub mod jwt;
 

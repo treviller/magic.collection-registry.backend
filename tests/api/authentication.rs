@@ -44,7 +44,8 @@ pub async fn get_profile_should_return_200() {
     let authentication_service = AuthenticationService::new(configuration.auth.clone());
     let user_provider = UserMemoryProvider::new();
     let token = authentication_service
-        .generate_jwt(user_provider.find_one_by_username("user1".into()).unwrap());
+        .generate_jwt(user_provider.find_one_by_username("user1".into()).unwrap())
+        .unwrap();
 
     let req = test::TestRequest::get()
         .uri("/api/profile")
