@@ -1,6 +1,7 @@
 use actix_web::{get, post, put, web, HttpResponse};
 use anyhow::Context;
 use secrecy::Secret;
+use tera::Tera;
 use uuid::Uuid;
 
 use crate::app::MutStorage;
@@ -53,22 +54,43 @@ pub struct ForgottenPasswordData {
     email: String,
 }
 
-#[tracing::instrument(name = "Reset password", skip(request_data, config))]
+#[tracing::instrument(name = "Reset password", skip(request_data, config, tera, storage))]
 #[post("/password-reset")]
 pub async fn forgotten_password(
     request_data: web::Json<ForgottenPasswordData>,
     config: web::Data<Settings>,
+    tera: web::Data<Tera>,
+    storage: web::Data<MutStorage>,
 ) -> Result<HttpResponse, ForgottenPasswordError> {
+    let token_service = TokenService::new(&storage.storage, &config);
+    let user_service = UserService::new(&storage.storage);
     let email_client = MailjetClient::new(config.email.clone());
-    let html_content = r#"<p><span>Une demande de réinitialisation de mot de passe a été effectuée.</span><span>Cliquez sur ce <a href="" target="_blank">lien</a> pour réinitialiser votre mot de passe.</p>"#;
 
     let user_email =
         UserEmail::parse(request_data.0.email).map_err(ForgottenPasswordError::ValidationError)?;
+    let user = match user_service.get_user_from_username(user_email.as_ref()) {
+        Ok(u) => u,
+        Err(_) => {
+            tracing::info!("Unable to found user with email {}", user_email.as_ref());
+            return Ok(HttpResponse::NoContent().finish());
+        }
+    };
+
+    let token = token_service
+        .generate_token_for_user(&user)
+        .context("An error occurred during token generation.")
+        .map_err(ForgottenPasswordError::UnexpectedError)?;
+
+    let mut context = tera::Context::new();
+    context.insert(
+        "reset_link",
+        &format!("{}/password-reset/{}", config.host, token.id),
+    );
 
     email_client.send_email(
         &user_email,
         "Demande de réinitialisation de mot de passe".into(),
-        html_content,
+        &tera.render("mail/reset_password.html", &context).unwrap(),
         "Une demande de réinitialisation de mot de passe a été effectuée. Cliquez sur ce lien pour réinitialiser votre mot de passe.".into(),
     ).await.context("An error occurred during email sending.").map_err(ForgottenPasswordError::UnexpectedError)?;
 
@@ -93,7 +115,10 @@ pub async fn reset_password(
         .context("Invalid token id")
         .map_err(ResetPasswordError::InvalidToken)?;
 
-    token_service.reset_user_password(token_id, &request_data.0.password);
+    token_service
+        .reset_user_password(token_id, &request_data.0.password)
+        .context("Unable to reset user password")
+        .map_err(ResetPasswordError::InvalidToken)?;
 
     Ok(HttpResponse::NoContent().finish())
 }

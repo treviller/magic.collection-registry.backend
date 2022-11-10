@@ -29,7 +29,7 @@ pub async fn login_should_return_200() {
         .uri("/api/login")
         .insert_header(ContentType::json())
         .set_json(serde_json::json!({
-            "login": "user1",
+            "login": "test@email.com",
             "password": "test"
         }));
 

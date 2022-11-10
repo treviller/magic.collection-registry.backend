@@ -24,12 +24,12 @@ impl MemoryStorage {
 
         users.insert(user_id_1, User {
             id: user_id_1,
-            username: "user1".into(),
+            username: "test@email.com".into(),
             password: Secret::new("$argon2id$v=19$m=4096,t=3,p=1$njFuptpoWRAhlPsfwK5IYA$eJJGq0hW6/IMDKsVal7mxSK/YlOvI12JyxcETS5cYPQ".into()),
         });
         users.insert(user_id_2, User {
             id: user_id_2,
-            username: "user2".into(),
+            username: "x7iv7vqe2@mozmail.com".into(),
             password: Secret::new("$argon2id$v=19$m=4096,t=3,p=1$/rG29LlMB72wf9+m71cauQ$WL0HiAvPMMJooHzxuwweoINv+Rv8lU5yT8XOHWOrH5E".into()),
         });
 

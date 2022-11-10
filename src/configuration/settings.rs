@@ -2,6 +2,7 @@ use secrecy::Secret;
 
 #[derive(serde::Deserialize, Clone)]
 pub struct Settings {
+    pub host: String,
     pub auth: AuthSettings,
     pub email: EmailSettings,
 }

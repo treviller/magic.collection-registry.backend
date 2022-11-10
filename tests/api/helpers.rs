@@ -2,12 +2,14 @@ use std::sync::Mutex;
 
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
+use anyhow::Context;
 use once_cell::sync::Lazy;
 use secrecy::Secret;
+use tera::Tera;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
 
-use magic_collection_registry_backend::app::{configure_routing, MutStorage};
+use magic_collection_registry_backend::app::{configure_routing, initialize_tera, MutStorage};
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::settings::Settings;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
@@ -28,11 +30,13 @@ pub async fn init_test_app_and_make_request(
     Lazy::force(&TRACING);
     let config_data = web::Data::new(configuration);
     let storage = web::Data::new(MutStorage { storage });
-
+    let tera = web::Data::new(initialize_tera());
+    
     let app = App::new()
         .wrap(TracingLogger::default())
         .app_data(config_data.clone())
         .app_data(storage.clone())
+        .app_data(tera.clone())
         .configure(configure_routing);
 
     let test_app = test::init_service(app).await;
@@ -54,7 +58,11 @@ pub fn generate_access_token(config: &Settings, storage: &Mutex<MemoryStorage>) 
     let authentication_service = AuthenticationService::new(config.auth.clone());
     let user_provider = UserMemoryProvider::new(storage);
     let token = authentication_service
-        .generate_jwt(user_provider.find_one_by_username("user1".into()).unwrap())
+        .generate_jwt(
+            user_provider
+                .find_one_by_username("test@email.com".into())
+                .unwrap(),
+        )
         .unwrap();
 
     token.access_token

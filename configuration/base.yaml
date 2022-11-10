@@ -2,4 +2,4 @@ auth:
   jwt_key: "NpuaRPoDdCqGLxQgGEXQeSTgRGdjWZKLoB7fXjhZpaG5zBdYoyikkd"
   jwt_ttl: 3600
 email:
-  base_url: "https://mailjet.com"
+  base_url: "https://api.mailjet.com/v3"
