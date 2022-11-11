@@ -60,7 +60,7 @@ impl FromRequest for User {
                 .context("Failed to decode and validate the jwt")
                 .map_err(JwtError::InvalidToken)?;
 
-            let user_service = UserService::new(&storage.storage);
+            let user_service = UserService::new();
 
             user_service
                 .get_user_from_username(&jwt_claims.sub)

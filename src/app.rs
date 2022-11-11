@@ -2,7 +2,6 @@ use std::sync::Mutex;
 
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
-use anyhow::Context;
 use tera::Tera;
 use tracing_actix_web::TracingLogger;
 

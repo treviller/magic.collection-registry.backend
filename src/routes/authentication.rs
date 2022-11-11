@@ -23,15 +23,14 @@ pub struct LoginData {
     password: Secret<String>,
 }
 
-#[tracing::instrument(name = "Login request", skip(request_data, config, storage))]
+#[tracing::instrument(name = "Login request", skip(request_data, config))]
 #[post("/login")]
 pub async fn login(
     request_data: web::Json<LoginData>,
     config: web::Data<Settings>,
-    storage: web::Data<MutStorage>,
 ) -> Result<HttpResponse, LoginError> {
     let authentication_service = AuthenticationService::new(config.auth.clone());
-    let user_service = UserService::new(&storage.storage);
+    let user_service = UserService::new();
 
     let user = user_service
         .get_user_from_username(&request_data.0.login)
@@ -54,16 +53,15 @@ pub struct ForgottenPasswordData {
     email: String,
 }
 
-#[tracing::instrument(name = "Reset password", skip(request_data, config, tera, storage))]
+#[tracing::instrument(name = "Reset password", skip(request_data, config, tera))]
 #[post("/password-reset")]
 pub async fn forgotten_password(
     request_data: web::Json<ForgottenPasswordData>,
     config: web::Data<Settings>,
     tera: web::Data<Tera>,
-    storage: web::Data<MutStorage>,
 ) -> Result<HttpResponse, ForgottenPasswordError> {
-    let token_service = TokenService::new(&storage.storage, &config);
-    let user_service = UserService::new(&storage.storage);
+    let token_service = TokenService::new(&config);
+    let user_service = UserService::new();
     let email_client = MailjetClient::new(config.email.clone());
 
     let user_email =
@@ -102,15 +100,14 @@ pub struct ResetPasswordData {
     password: Secret<String>,
 }
 
-#[tracing::instrument(name = "Reset password", skip(request_data, config, storage))]
+#[tracing::instrument(name = "Reset password", skip(request_data, config))]
 #[put("/password-reset/{token}")]
 pub async fn reset_password(
     token: web::Path<String>,
     request_data: web::Json<ResetPasswordData>,
-    storage: web::Data<MutStorage>,
     config: web::Data<Settings>,
 ) -> Result<HttpResponse, ResetPasswordError> {
-    let mut token_service = TokenService::new(&storage.storage, &config);
+    let mut token_service = TokenService::new(&config);
     let token_id = Uuid::parse_str(token.as_str())
         .context("Invalid token id")
         .map_err(ResetPasswordError::InvalidToken)?;

@@ -9,23 +9,22 @@ use crate::domain::model::token::{Token, TokenType};
 use crate::domain::model::user::User;
 use crate::domain::user::UserService;
 use crate::errors::domain::DomainError;
-use crate::provider::memory::token::MemoryTokenProvider;
-use crate::provider::memory::MemoryStorage;
+use crate::provider::database::token::DbTokenProvider;
 use crate::provider::token::TokenProvider;
 
-pub struct TokenService<'a> {
-    token_provider: MemoryTokenProvider<'a>,
-    user_service: UserService<'a>,
+pub struct TokenService {
+    token_provider: DbTokenProvider,
+    user_service: UserService,
     auth_service: AuthenticationService,
 }
 
-impl<'a> TokenService<'a> {
-    pub fn new(storage: &'a Mutex<MemoryStorage>, config: &Settings) -> Self {
-        let user_service = UserService::new(storage);
+impl TokenService {
+    pub fn new(config: &Settings) -> Self {
+        let user_service = UserService::new();
         let auth_service = AuthenticationService::new(config.auth.clone());
 
         Self {
-            token_provider: MemoryTokenProvider::new(storage),
+            token_provider: DbTokenProvider {},
             user_service,
             auth_service,
         }

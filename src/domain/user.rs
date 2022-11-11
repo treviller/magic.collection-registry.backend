@@ -1,22 +1,19 @@
-use std::sync::Mutex;
-
 use secrecy::Secret;
 use uuid::Uuid;
 
 use crate::domain::model::user::User;
 use crate::errors::domain::DomainError;
-use crate::provider::memory::user::UserMemoryProvider;
-use crate::provider::memory::MemoryStorage;
+use crate::provider::database::user::DbUserProvider;
 use crate::provider::user::UserProvider;
 
-pub struct UserService<'a> {
-    user_provider: UserMemoryProvider<'a>,
+pub struct UserService {
+    user_provider: DbUserProvider,
 }
 
-impl<'a> UserService<'a> {
-    pub fn new(storage: &'a Mutex<MemoryStorage>) -> Self {
+impl UserService {
+    pub fn new() -> Self {
         Self {
-            user_provider: UserMemoryProvider::new(storage),
+            user_provider: DbUserProvider {},
         }
     }
 

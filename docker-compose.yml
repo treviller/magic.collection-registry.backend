@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  database:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: magic-collection-registry
+      POSTGRES_PORT: 5432
+    ports:
+      - "5432:5432"

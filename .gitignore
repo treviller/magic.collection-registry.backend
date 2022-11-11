@@ -5,3 +5,5 @@
 configuration/local.yaml
 
 configuration/prod.yaml
+
+.env

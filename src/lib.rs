@@ -7,3 +7,4 @@ pub mod errors;
 pub mod monitoring;
 pub mod provider;
 pub mod routes;
+pub mod schema;
