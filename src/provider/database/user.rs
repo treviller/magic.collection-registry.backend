@@ -1,5 +1,3 @@
-use diesel::debug_query;
-use diesel::pg::Pg;
 use diesel::prelude::*;
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
@@ -73,19 +71,7 @@ impl UserProvider for DbUserProvider {
         let mut connection = establish_connection();
         let user: DbUser = user.into();
 
-        tracing::info!("USER DEBUG {:?}", user);
-
         //TODO handle all error cases
-        let result = diesel::update(&user).set(&user);
-
-        let sql = debug_query::<Pg, _>(&result);
-        println!("DEBUG QUERY {:?}", sql);
-
-        let result = result.execute(&mut connection);
-
-        match result {
-            Ok(value) => tracing::info!("OK : {}", value),
-            Err(value) => tracing::error!("ERROR : {}", value),
-        };
+        let _ = diesel::update(&user).set(&user).execute(&mut connection);
     }
 }
