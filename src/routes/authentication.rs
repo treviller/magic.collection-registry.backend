@@ -1,6 +1,5 @@
 use actix_web::{get, post, put, web, HttpResponse};
 use anyhow::Context;
-use diesel::pg::Pg;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use r2d2::Pool;

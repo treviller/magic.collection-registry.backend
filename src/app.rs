@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
@@ -9,15 +7,10 @@ use tracing_actix_web::TracingLogger;
 use crate::configuration::settings::Settings;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
 use crate::provider::database::establish_connection_pool;
-use crate::provider::memory::MemoryStorage;
 use crate::routes::authentication::{forgotten_password, get_profile, login, reset_password};
 
 pub struct Application {
     server: Server,
-}
-
-pub struct MutStorage {
-    pub storage: Mutex<MemoryStorage>,
 }
 
 impl Application {
@@ -38,9 +31,6 @@ impl Application {
 
     fn create_server(configuration: Settings) -> Result<Server, anyhow::Error> {
         let config_data = web::Data::new(configuration.clone());
-        let memory_storage = web::Data::new(MutStorage {
-            storage: Mutex::new(MemoryStorage::new()),
-        });
         let db_pool = web::Data::new(establish_connection_pool());
 
         let tera = web::Data::new(initialize_tera());
@@ -48,7 +38,6 @@ impl Application {
             App::new()
                 .wrap(TracingLogger::default())
                 .app_data(config_data.clone())
-                .app_data(memory_storage.clone())
                 .app_data(tera.clone())
                 .app_data(db_pool.clone())
                 .configure(configure_routing)

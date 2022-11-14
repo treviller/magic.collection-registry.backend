@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use actix_web::http::header;
 use actix_web::http::header::ContentType;
 use actix_web::test;
@@ -9,10 +7,9 @@ use wiremock::{Mock, ResponseTemplate};
 
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::loader::get_configuration;
-use magic_collection_registry_backend::provider::memory::MemoryStorage;
 
 use crate::helpers;
-use crate::helpers::{generate_access_token, mock_email_server};
+use crate::helpers::{generate_access_token, mock_email_server, test_setup};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct LoginJsonResponse {
@@ -23,7 +20,6 @@ pub struct LoginJsonResponse {
 pub async fn login_should_return_200() {
     let configuration = get_configuration().expect("Failed to build configuration.");
     let authentication_service = AuthenticationService::new(configuration.auth.clone());
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::post()
         .uri("/api/login")
@@ -33,8 +29,7 @@ pub async fn login_should_return_200() {
             "password": "test"
         }));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert!(response.status().is_success());
 
     let json: LoginJsonResponse = test::read_body_json(response).await;
@@ -46,8 +41,9 @@ pub async fn login_should_return_200() {
 
 #[actix_web::test]
 pub async fn get_profile_should_return_200() {
+    //We are forced to setup here as we need a ready connection to the database when generating the jwt
+    test_setup();
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::get()
         .uri("/api/profile")
@@ -56,28 +52,25 @@ pub async fn get_profile_should_return_200() {
             header::AUTHORIZATION,
             format!(
                 "Bearer {}",
-                generate_access_token(&configuration, &memory_storage)
+                generate_access_token(&configuration)
                     .expose_secret()
                     .as_str()
             ),
         ));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert!(response.status().is_success());
 }
 
 #[actix_web::test]
 pub async fn get_profile_without_jwt_should_return_401() {
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::get()
         .uri("/api/profile")
         .insert_header(ContentType::json());
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert_eq!(response.status().as_u16(), 401);
 }
 
@@ -85,7 +78,6 @@ pub async fn get_profile_without_jwt_should_return_401() {
 pub async fn forgotten_password_should_send_email() {
     let mut configuration = get_configuration().expect("Failed to build configuration.");
     let email_server = mock_email_server(&mut configuration).await;
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     Mock::given(path("/send"))
         .and(method("POST"))
@@ -101,8 +93,7 @@ pub async fn forgotten_password_should_send_email() {
             "email": "test@email.com"
         }));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert!(response.status().is_success());
 }
 
@@ -110,7 +101,6 @@ pub async fn forgotten_password_should_send_email() {
 pub async fn reset_password_should_return_200_with_valid_token() {
     let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::put()
         .uri(&format!("/api/password-reset/{}", token))
@@ -119,8 +109,7 @@ pub async fn reset_password_should_return_200_with_valid_token() {
             "password": "nosecret"
         }));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert!(response.status().is_success());
 }
 
@@ -128,7 +117,6 @@ pub async fn reset_password_should_return_200_with_valid_token() {
 pub async fn reset_password_should_return_400_with_invalid_token() {
     let token = "invalidtoken";
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::put()
         .uri(&format!("/api/password-reset/{}", token))
@@ -137,8 +125,7 @@ pub async fn reset_password_should_return_400_with_invalid_token() {
             "password": "nosecret"
         }));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert_eq!(response.status().as_u16(), 400);
 }
 
@@ -146,7 +133,6 @@ pub async fn reset_password_should_return_400_with_invalid_token() {
 pub async fn reset_password_should_return_400_with_invalid_payload() {
     let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
     let configuration = get_configuration().expect("Failed to build configuration.");
-    let memory_storage = Mutex::new(MemoryStorage::new());
 
     let req = test::TestRequest::put()
         .uri(&format!("/api/password-reset/{}", token))
@@ -155,7 +141,6 @@ pub async fn reset_password_should_return_400_with_invalid_payload() {
             "notusedkey": "blabla"
         }));
 
-    let response =
-        helpers::init_test_app_and_make_request(configuration, memory_storage, req).await;
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
     assert_eq!(response.status().as_u16(), 400);
 }

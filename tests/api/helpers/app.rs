@@ -1,4 +1,4 @@
-use std::sync::{Mutex, Once};
+use std::sync::Once;
 
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
@@ -12,12 +12,11 @@ use secrecy::Secret;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
 
-use magic_collection_registry_backend::app::{configure_routing, initialize_tera, MutStorage};
+use magic_collection_registry_backend::app::{configure_routing, initialize_tera};
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::settings::Settings;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
-use magic_collection_registry_backend::provider::memory::user::UserMemoryProvider;
-use magic_collection_registry_backend::provider::memory::MemoryStorage;
+use magic_collection_registry_backend::provider::database::user::DbUserProvider;
 use magic_collection_registry_backend::provider::user::UserProvider;
 
 use crate::helpers::database::establish_test_connection_pool;
@@ -34,27 +33,28 @@ lazy_static! {
     static ref DB_POOL: Pool<ConnectionManager<PgConnection>> = establish_test_connection_pool();
 }
 
-pub async fn init_test_app_and_make_request(
-    configuration: Settings,
-    storage: Mutex<MemoryStorage>,
-    request: test::TestRequest,
-) -> ServiceResponse {
+pub fn test_setup() {
     Lazy::force(&TRACING);
 
     INIT_ENVIRONMENT.call_once(|| {
         load_env_values();
         load_fixtures();
     });
+}
+
+pub async fn init_test_app_and_make_request(
+    configuration: Settings,
+    request: test::TestRequest,
+) -> ServiceResponse {
+    test_setup();
 
     let config_data = web::Data::new(configuration);
-    let storage = web::Data::new(MutStorage { storage });
     let tera = web::Data::new(initialize_tera());
     let db_pool = web::Data::new(DB_POOL.clone());
 
     let app = App::new()
         .wrap(TracingLogger::default())
         .app_data(config_data.clone())
-        .app_data(storage.clone())
         .app_data(tera.clone())
         .app_data(db_pool.clone())
         .configure(configure_routing);
@@ -74,9 +74,9 @@ pub async fn mock_email_server(config: &mut Settings) -> MockServer {
     email_server
 }
 
-pub fn generate_access_token(config: &Settings, storage: &Mutex<MemoryStorage>) -> Secret<String> {
+pub fn generate_access_token(config: &Settings) -> Secret<String> {
     let authentication_service = AuthenticationService::new(config.auth.clone());
-    let user_provider = UserMemoryProvider::new(storage);
+    let user_provider = DbUserProvider::new(&DB_POOL);
     let token = authentication_service
         .generate_jwt(
             user_provider

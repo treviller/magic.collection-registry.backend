@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use r2d2::Pool;

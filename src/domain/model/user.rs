@@ -12,7 +12,6 @@ use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
-use crate::app::MutStorage;
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::user::UserService;
