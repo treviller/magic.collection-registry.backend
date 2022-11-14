@@ -4,7 +4,7 @@ use diesel::{
 };
 use uuid::Uuid;
 
-use crate::domain::model::token::Token;
+use crate::domain::model::token::{Token, TokenType};
 use crate::provider::database::establish_connection;
 use crate::provider::token::TokenProvider;
 use crate::schema::tokens;
@@ -13,17 +13,16 @@ use crate::schema::tokens::dsl::*;
 #[derive(Queryable, Identifiable, AsChangeset, Insertable)]
 #[diesel(table_name = tokens)]
 pub struct DbToken {
-    id: Uuid,
-    // TODO use enum instead of String
-    token_type: String,
-    user_id: Uuid,
+    pub id: Uuid,
+    pub token_type: TokenType,
+    pub user_id: Uuid,
 }
 
 impl From<Token> for DbToken {
     fn from(token: Token) -> Self {
         Self {
             id: token.id,
-            token_type: token.token_type.into(),
+            token_type: token.token_type,
             user_id: token.user_id,
         }
     }
@@ -33,7 +32,7 @@ impl Into<Token> for DbToken {
     fn into(self) -> Token {
         Token {
             id: self.id,
-            token_type: self.token_type.into(),
+            token_type: self.token_type,
             user_id: self.user_id,
         }
     }

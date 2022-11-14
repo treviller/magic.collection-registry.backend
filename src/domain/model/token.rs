@@ -1,20 +1,9 @@
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, diesel_derive_enum::DbEnum)]
+#[DieselTypePath = "crate::schema::sql_types::TokenType"]
 pub enum TokenType {
     ResetPassword,
-}
-
-impl From<String> for TokenType {
-    fn from(_: String) -> Self {
-        TokenType::ResetPassword
-    }
-}
-
-impl Into<String> for TokenType {
-    fn into(self) -> String {
-        "reset_password".into()
-    }
 }
 
 #[derive(Clone)]

@@ -1,9 +1,18 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "token_type"))]
+    pub struct TokenType;
+}
+
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::TokenType;
+
     tokens (id) {
         id -> Uuid,
-        token_type -> Varchar,
+        token_type -> TokenType,
         user_id -> Uuid,
     }
 }
