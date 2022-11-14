@@ -1,11 +1,9 @@
-use std::sync::Mutex;
+use std::sync::{Mutex, Once};
 
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
-use anyhow::Context;
 use once_cell::sync::Lazy;
 use secrecy::Secret;
-use tera::Tera;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
 
@@ -17,10 +15,14 @@ use magic_collection_registry_backend::provider::memory::user::UserMemoryProvide
 use magic_collection_registry_backend::provider::memory::MemoryStorage;
 use magic_collection_registry_backend::provider::user::UserProvider;
 
+use crate::helpers::fixtures::load_fixtures;
+
 static TRACING: Lazy<()> = Lazy::new(|| {
     let subscriber = get_subscriber("info".into());
     initialize_subscriber(subscriber);
 });
+
+static LOAD_FIXTURES: Once = Once::new();
 
 pub async fn init_test_app_and_make_request(
     configuration: Settings,
@@ -28,10 +30,13 @@ pub async fn init_test_app_and_make_request(
     request: test::TestRequest,
 ) -> ServiceResponse {
     Lazy::force(&TRACING);
+
+    LOAD_FIXTURES.call_once(|| load_fixtures());
+
     let config_data = web::Data::new(configuration);
     let storage = web::Data::new(MutStorage { storage });
     let tera = web::Data::new(initialize_tera());
-    
+
     let app = App::new()
         .wrap(TracingLogger::default())
         .app_data(config_data.clone())

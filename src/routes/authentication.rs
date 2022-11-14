@@ -4,7 +4,6 @@ use secrecy::Secret;
 use tera::Tera;
 use uuid::Uuid;
 
-use crate::app::MutStorage;
 use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::model::user::User;

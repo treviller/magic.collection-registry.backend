@@ -10,12 +10,12 @@ use crate::provider::user::UserProvider;
 use crate::schema::users;
 use crate::schema::users::dsl::*;
 
-#[derive(AsChangeset, Queryable, Identifiable, Debug)]
+#[derive(AsChangeset, Queryable, Identifiable, Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct DbUser {
-    id: Uuid,
-    username: String,
-    password: String,
+    pub id: Uuid,
+    pub username: String,
+    pub password: String,
 }
 
 impl Into<User> for DbUser {
