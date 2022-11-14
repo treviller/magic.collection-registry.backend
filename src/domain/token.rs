@@ -1,5 +1,8 @@
 use std::sync::Mutex;
 
+use diesel::r2d2::ConnectionManager;
+use diesel::PgConnection;
+use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
@@ -12,19 +15,19 @@ use crate::errors::domain::DomainError;
 use crate::provider::database::token::DbTokenProvider;
 use crate::provider::token::TokenProvider;
 
-pub struct TokenService {
-    token_provider: DbTokenProvider,
-    user_service: UserService,
+pub struct TokenService<'a> {
+    token_provider: DbTokenProvider<'a>,
+    user_service: UserService<'a>,
     auth_service: AuthenticationService,
 }
 
-impl TokenService {
-    pub fn new(config: &Settings) -> Self {
-        let user_service = UserService::new();
+impl<'a> TokenService<'a> {
+    pub fn new(config: &Settings, db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+        let user_service = UserService::new(db_pool);
         let auth_service = AuthenticationService::new(config.auth.clone());
 
         Self {
-            token_provider: DbTokenProvider {},
+            token_provider: DbTokenProvider::new(db_pool),
             user_service,
             auth_service,
         }

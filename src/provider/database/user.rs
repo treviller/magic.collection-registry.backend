@@ -1,9 +1,10 @@
 use diesel::prelude::*;
+use diesel::r2d2::ConnectionManager;
+use r2d2::Pool;
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
 
 use crate::domain::model::user::User;
-use crate::provider::database::establish_connection;
 use crate::provider::user::UserProvider;
 use crate::schema::users;
 use crate::schema::users::dsl::*;
@@ -36,11 +37,19 @@ impl From<User> for DbUser {
     }
 }
 
-pub struct DbUserProvider {}
+pub struct DbUserProvider<'a> {
+    db_pool: &'a Pool<ConnectionManager<PgConnection>>,
+}
 
-impl UserProvider for DbUserProvider {
+impl<'a> DbUserProvider<'a> {
+    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+        Self { db_pool }
+    }
+}
+
+impl<'a> UserProvider for DbUserProvider<'a> {
     fn find_one_by_username(&self, searched_username: &str) -> Option<User> {
-        let mut connection = establish_connection();
+        let mut connection = self.db_pool.get().unwrap();
 
         let result: QueryResult<DbUser> = users
             .filter(username.eq(searched_username))
@@ -54,7 +63,7 @@ impl UserProvider for DbUserProvider {
     }
 
     fn find_one_by_id(&self, user_id: Uuid) -> Option<User> {
-        let mut connection = establish_connection();
+        let mut connection = self.db_pool.get().unwrap();
 
         let result: QueryResult<DbUser> = users
             .filter(id.eq(user_id))
@@ -68,7 +77,7 @@ impl UserProvider for DbUserProvider {
     }
 
     fn update_user(&mut self, user: User) {
-        let mut connection = establish_connection();
+        let mut connection = self.db_pool.get().unwrap();
         let user: DbUser = user.into();
 
         //TODO handle all error cases

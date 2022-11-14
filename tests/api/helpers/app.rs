@@ -2,7 +2,12 @@ use std::sync::{Mutex, Once};
 
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
+use diesel::r2d2::ConnectionManager;
+use diesel::PgConnection;
+use dotenvy::dotenv;
+use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
+use r2d2::Pool;
 use secrecy::Secret;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
@@ -15,6 +20,7 @@ use magic_collection_registry_backend::provider::memory::user::UserMemoryProvide
 use magic_collection_registry_backend::provider::memory::MemoryStorage;
 use magic_collection_registry_backend::provider::user::UserProvider;
 
+use crate::helpers::database::establish_test_connection_pool;
 use crate::helpers::fixtures::load_fixtures;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -22,7 +28,11 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     initialize_subscriber(subscriber);
 });
 
-static LOAD_FIXTURES: Once = Once::new();
+static INIT_ENVIRONMENT: Once = Once::new();
+
+lazy_static! {
+    static ref DB_POOL: Pool<ConnectionManager<PgConnection>> = establish_test_connection_pool();
+}
 
 pub async fn init_test_app_and_make_request(
     configuration: Settings,
@@ -31,17 +41,22 @@ pub async fn init_test_app_and_make_request(
 ) -> ServiceResponse {
     Lazy::force(&TRACING);
 
-    LOAD_FIXTURES.call_once(|| load_fixtures());
+    INIT_ENVIRONMENT.call_once(|| {
+        load_env_values();
+        load_fixtures();
+    });
 
     let config_data = web::Data::new(configuration);
     let storage = web::Data::new(MutStorage { storage });
     let tera = web::Data::new(initialize_tera());
+    let db_pool = web::Data::new(DB_POOL.clone());
 
     let app = App::new()
         .wrap(TracingLogger::default())
         .app_data(config_data.clone())
         .app_data(storage.clone())
         .app_data(tera.clone())
+        .app_data(db_pool.clone())
         .configure(configure_routing);
 
     let test_app = test::init_service(app).await;
@@ -71,4 +86,9 @@ pub fn generate_access_token(config: &Settings, storage: &Mutex<MemoryStorage>) 
         .unwrap();
 
     token.access_token
+}
+
+fn load_env_values() {
+    dotenv().ok();
+    dotenvy::from_filename(".env.test").ok();
 }

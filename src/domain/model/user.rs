@@ -6,6 +6,9 @@ use actix_web::http::header;
 use actix_web::web::Data;
 use actix_web::{FromRequest, HttpRequest};
 use anyhow::{anyhow, Context};
+use diesel::r2d2::ConnectionManager;
+use diesel::PgConnection;
+use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
@@ -34,9 +37,9 @@ impl FromRequest for User {
                 .app_data::<Data<Settings>>()
                 .map(|settings| settings.auth.clone())
                 .unwrap();
-            let storage = req
-                .app_data::<Data<MutStorage>>()
-                .map(|storage| storage.clone())
+            let db_pool = req
+                .app_data::<Data<Pool<ConnectionManager<PgConnection>>>>()
+                .map(|db_pool| db_pool.clone())
                 .unwrap();
 
             let authentication_service = AuthenticationService::new(auth_settings);
@@ -60,7 +63,7 @@ impl FromRequest for User {
                 .context("Failed to decode and validate the jwt")
                 .map_err(JwtError::InvalidToken)?;
 
-            let user_service = UserService::new();
+            let user_service = UserService::new(&db_pool);
 
             user_service
                 .get_user_from_username(&jwt_claims.sub)

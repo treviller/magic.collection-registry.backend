@@ -1,11 +1,12 @@
 use diesel::prelude::*;
+use diesel::r2d2::ConnectionManager;
 use diesel::{
     insert_into, AsChangeset, Identifiable, Insertable, QueryResult, Queryable, RunQueryDsl,
 };
+use r2d2::Pool;
 use uuid::Uuid;
 
 use crate::domain::model::token::{Token, TokenType};
-use crate::provider::database::establish_connection;
 use crate::provider::token::TokenProvider;
 use crate::schema::tokens;
 use crate::schema::tokens::dsl::*;
@@ -38,11 +39,19 @@ impl Into<Token> for DbToken {
     }
 }
 
-pub struct DbTokenProvider {}
+pub struct DbTokenProvider<'a> {
+    db_pool: &'a Pool<ConnectionManager<PgConnection>>,
+}
 
-impl TokenProvider for DbTokenProvider {
+impl<'a> DbTokenProvider<'a> {
+    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+        Self { db_pool }
+    }
+}
+
+impl<'a> TokenProvider for DbTokenProvider<'a> {
     fn save_token(&self, token: Token) {
-        let mut connection = establish_connection();
+        let mut connection = self.db_pool.get().unwrap();
         let token: DbToken = token.into();
 
         //TODO handle errors
@@ -50,7 +59,7 @@ impl TokenProvider for DbTokenProvider {
     }
 
     fn find_token_by_id(&self, searched_id: Uuid) -> Option<Token> {
-        let mut connection = establish_connection();
+        let mut connection = self.db_pool.get().unwrap();
 
         let result: QueryResult<DbToken> = tokens
             .filter(id.eq(searched_id))
