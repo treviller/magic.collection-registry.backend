@@ -16,6 +16,7 @@ name = "magic-collection-registry-backend"
 actix-web = "4"
 anyhow = "1"
 argon2 = { version = "0.4", features = ["std"] }
+chrono = { version = "0.4", features = ["serde"] }
 config = "0.13"
 diesel = { version = "2.0.0", features = ["postgres", "r2d2", "uuid"] }
 diesel-derive-enum = { version = "2.0.0-rc.0", features = ["postgres"] }
@@ -29,13 +30,15 @@ reqwest = { version = "0.11", default-features = false, features = ["json", "rus
 secrecy = { version = "0.8", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+strum = "0.24"
+strum_macros = "0.24"
 tera = "1"
 thiserror = "1"
 tracing = { version = "0.1", features = ["log"] }
 tracing-log = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "registry", "json"] }
 tracing-actix-web = "0.6"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 validator = "0.16"
 
 [dev-dependencies]

@@ -8,6 +8,7 @@ use crate::configuration::settings::Settings;
 use crate::monitoring::{get_subscriber, initialize_subscriber};
 use crate::provider::database::establish_connection_pool;
 use crate::routes::authentication::{forgotten_password, get_profile, login, reset_password};
+use crate::routes::sets::get_sets_list;
 
 pub struct Application {
     server: Server,
@@ -55,7 +56,8 @@ pub fn configure_routing(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(get_profile)
             .service(forgotten_password)
-            .service(reset_password),
+            .service(reset_password)
+            .service(get_sets_list),
     );
 }
 
