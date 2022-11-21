@@ -1,8 +1,6 @@
 use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
-use diesel::{
-    insert_into, AsChangeset, Identifiable, Insertable, QueryResult, Queryable, RunQueryDsl,
-};
+use diesel::{insert_into, AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
 use r2d2::Pool;
 use uuid::Uuid;
 

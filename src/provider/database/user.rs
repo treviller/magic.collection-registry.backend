@@ -9,7 +9,7 @@ use crate::provider::user::UserProvider;
 use crate::schema::users;
 use crate::schema::users::dsl::*;
 
-#[derive(AsChangeset, Queryable, Identifiable, Insertable, Debug)]
+#[derive(AsChangeset, Queryable, Identifiable, Insertable)]
 #[diesel(table_name = users)]
 pub struct DbUser {
     pub id: Uuid,

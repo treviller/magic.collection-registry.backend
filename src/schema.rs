@@ -2,8 +2,33 @@
 
 pub mod sql_types {
     #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "set_type"))]
+    pub struct SetType;
+
+    #[derive(diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "token_type"))]
     pub struct TokenType;
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::SetType;
+
+    sets (id) {
+        id -> Uuid,
+        code -> Varchar,
+        name -> Varchar,
+        set_type -> SetType,
+        released_at -> Date,
+        block_code -> Nullable<Varchar>,
+        block -> Nullable<Varchar>,
+        parent_set_id -> Nullable<Uuid>,
+        card_count -> Int4,
+        printed_size -> Int4,
+        foil_only -> Bool,
+        non_foil_only -> Bool,
+        icon_svg_uri -> Text,
+    }
 }
 
 diesel::table! {
@@ -28,6 +53,7 @@ diesel::table! {
 diesel::joinable!(tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    sets,
     tokens,
     users,
 );
