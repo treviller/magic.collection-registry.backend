@@ -90,5 +90,7 @@ pub fn generate_access_token(config: &Settings) -> Secret<String> {
 
 fn load_env_values() {
     dotenv().ok();
-    dotenvy::from_filename(".env.test").ok();
+
+    let iter = dotenvy::from_filename_iter(".env.test").unwrap();
+    iter.overload().unwrap();
 }
