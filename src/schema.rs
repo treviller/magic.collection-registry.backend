@@ -11,6 +11,16 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    cards (id) {
+        id -> Uuid,
+        scryfall_id -> Varchar,
+        name -> Varchar,
+        lang -> Varchar,
+        released_at -> Date,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::SetType;
 
@@ -53,6 +63,7 @@ diesel::table! {
 diesel::joinable!(tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    cards,
     sets,
     tokens,
     users,

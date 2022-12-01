@@ -3,3 +3,4 @@ pub mod email;
 pub mod set;
 pub mod token;
 pub mod user;
+pub mod card;
