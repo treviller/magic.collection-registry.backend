@@ -11,7 +11,7 @@ pub mod user;
 pub type DbConnection = Pool<ConnectionManager<PgConnection>>;
 
 pub fn establish_connection_pool() -> DbConnection {
-    let database_url = env::var("DB_URL").expect("DB_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::new(database_url);
 
     Pool::builder().max_size(15).build(manager).unwrap()
