@@ -1,5 +1,6 @@
 use std::fmt::Formatter;
 use std::fs::File;
+use std::future::Future;
 use std::io;
 use std::io::BufReader;
 use std::time::SystemTime;
@@ -12,17 +13,25 @@ use uuid::Uuid;
 
 use magic_collection_registry_backend::domain::card::CardService;
 use magic_collection_registry_backend::domain::model::card::Card;
-use magic_collection_registry_backend::provider::database::establish_connection_pool;
+use magic_collection_registry_backend::domain::model::set::Set;
+use magic_collection_registry_backend::domain::set::SetService;
+use magic_collection_registry_backend::provider::database::{
+    establish_connection_pool, DbConnection,
+};
+use magic_collection_registry_backend::provider::scryfall::api::ScryfallSetListResponse;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     dotenv().ok();
 
-    bench(iterate_on_cards).await
+    let db_pool = establish_connection_pool();
+
+    bench(load_sets, "Loading sets", &db_pool).await;
+    bench(load_cards, "Loading cards", &db_pool).await
 }
 
 fn download_file() -> String {
-    "./cards-full.json".into()
+    "./cards-slice.json".into()
 }
 
 #[derive(serde::Deserialize)]
@@ -159,19 +168,20 @@ struct RelatedUris {
     edhrec: Option<String>,
 }
 
-async fn bench<F>(closure: F) -> Result<(), io::Error>
+async fn bench<'a, C, F>(closure: C, name: &str, db_pool: &'a DbConnection) -> Result<(), io::Error>
 where
-    F: FnOnce() -> Result<(), io::Error>,
+    F: Future<Output = Result<(), io::Error>> + 'a,
+    C: FnOnce(&'a DbConnection) -> F + 'a,
 {
     let start = SystemTime::now();
-    let result = closure();
+    let result = closure(db_pool).await;
     let end = SystemTime::now();
     let duration = end.duration_since(start).unwrap();
 
     if duration.as_secs_f64() < 1.0 {
-        println!("it tooks {} ms", duration.as_millis());
+        println!("{} took {} ms", name, duration.as_millis());
     } else {
-        println!("it tooks {} secs", duration.as_secs_f64());
+        println!("{} took {} secs", name, duration.as_secs_f64());
     }
 
     result
@@ -224,12 +234,11 @@ impl<'a> CardLoader<'a> {
     }
 }
 
-fn iterate_on_cards() -> Result<(), io::Error> {
+async fn load_cards(db_pool: &DbConnection) -> Result<(), io::Error> {
     let filepath = download_file();
     let reader = BufReader::new(File::open(filepath)?);
 
-    let db_pool = establish_connection_pool();
-    let mut cards_loader = CardLoader::new(500, CardService::new(&db_pool));
+    let mut cards_loader = CardLoader::new(500, CardService::new(db_pool));
 
     for card in iter_on_json_array(reader) {
         let card = match card {
@@ -249,6 +258,26 @@ fn iterate_on_cards() -> Result<(), io::Error> {
     }
 
     cards_loader.terminate();
+
+    Ok(())
+}
+
+async fn load_sets(db_pool: &DbConnection) -> Result<(), io::Error> {
+    let url = "https://api.scryfall.com/sets";
+
+    let client = reqwest::Client::new();
+    let response = client.get(url).send().await.unwrap();
+    let scryfall_sets: ScryfallSetListResponse = response.json().await.unwrap();
+
+    let sets: Vec<Set> = scryfall_sets
+        .data
+        .into_iter()
+        .map(|set| set.into_set().unwrap())
+        .collect();
+
+    let set_service = SetService::new(db_pool);
+
+    set_service.add_sets(sets);
 
     Ok(())
 }

@@ -6,7 +6,7 @@ pub struct SetCode(String);
 
 impl SetCode {
     pub fn parse(value: String) -> Result<Self, String> {
-        if value.len() < 3 || value.len() > 5 {
+        if value.len() < 3 || value.len() > 6 {
             return Err(format!("{} is not a valid set code", value));
         }
 
@@ -24,11 +24,13 @@ impl Into<String> for SetCode {
     Clone, Debug, EnumString, serde::Serialize, serde::Deserialize, diesel_derive_enum::DbEnum,
 )]
 #[DieselTypePath = "crate::schema::sql_types::SetType"]
+#[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum SetType {
     Core,
     Expansion,
     Masters,
+    Alchemy,
     Masterpiece,
     Arsenal,
     FromTheVault,
@@ -36,6 +38,7 @@ pub enum SetType {
     PremiumDeck,
     DuelDeck,
     DraftInnovation,
+    TreasureChest,
     Commander,
     Planechase,
     Archenemy,

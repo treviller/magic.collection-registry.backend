@@ -18,4 +18,8 @@ impl<'a> SetService<'a> {
     pub fn get_sets_list(&self) -> Result<Vec<Set>, DomainError> {
         Ok(self.set_provider.get_all_sets().unwrap())
     }
+
+    pub fn add_sets(&self, sets: Vec<Set>) {
+        self.set_provider.insert_sets(sets);
+    }
 }

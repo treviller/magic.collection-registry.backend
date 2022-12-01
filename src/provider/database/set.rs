@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use diesel::{AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
+use diesel::{insert_into, AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::domain::model::set::{Set, SetCode, SetType};
@@ -90,5 +90,14 @@ impl<'a> SetProvider for DbSetProvider<'a> {
             }
             Err(_) => Ok(vec![]), //TODO handle error cases
         }
+    }
+
+    fn insert_sets(&self, sets_list: Vec<Set>) {
+        let mut connection = self.db_pool.get().unwrap();
+
+        let sets_list: Vec<DbSet> = sets_list.into_iter().map(|set| set.into()).collect();
+
+        //TODO handle error cases
+        let _result = insert_into(sets).values(sets_list).execute(&mut connection);
     }
 }
