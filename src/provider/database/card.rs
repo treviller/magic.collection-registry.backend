@@ -16,6 +16,7 @@ pub struct DbCard {
     pub name: String,
     pub lang: String,
     pub released_at: NaiveDate,
+    pub set_id: Uuid,
 }
 
 impl From<Card> for DbCard {
@@ -26,6 +27,7 @@ impl From<Card> for DbCard {
             name: card.name,
             lang: card.lang,
             released_at: card.released_at,
+            set_id: card.set_id,
         }
     }
 }

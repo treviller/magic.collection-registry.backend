@@ -7,6 +7,7 @@ pub struct Card {
     pub name: String,
     pub lang: String,
     pub released_at: NaiveDate,
+    pub set_id: Uuid,
 }
 
 impl Card {}

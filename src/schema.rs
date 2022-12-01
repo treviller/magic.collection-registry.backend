@@ -17,6 +17,7 @@ diesel::table! {
         name -> Varchar,
         lang -> Varchar,
         released_at -> Date,
+        set_id -> Uuid,
     }
 }
 
@@ -60,6 +61,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(cards -> sets (set_id));
 diesel::joinable!(tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(

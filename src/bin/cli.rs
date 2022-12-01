@@ -71,7 +71,7 @@ struct DeserializedCard {
     promo: bool,
     reprint: bool,
     variation: bool,
-    set_id: String,
+    set_id: Uuid,
     set: String,
     set_name: String,
     set_type: String,
@@ -107,6 +107,7 @@ impl Into<Card> for DeserializedCard {
             name: self.name,
             lang: self.lang,
             released_at: self.released_at,
+            set_id: self.set_id,
         }
     }
 }
