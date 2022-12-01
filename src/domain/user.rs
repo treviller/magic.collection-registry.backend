@@ -1,12 +1,10 @@
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
-use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
 use crate::domain::model::user::User;
 use crate::errors::domain::DomainError;
 use crate::provider::database::user::DbUserProvider;
+use crate::provider::database::DbConnection;
 use crate::provider::user::UserProvider;
 
 pub struct UserService<'a> {
@@ -14,7 +12,7 @@ pub struct UserService<'a> {
 }
 
 impl<'a> UserService<'a> {
-    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: &'a DbConnection) -> Self {
         Self {
             user_provider: DbUserProvider::new(db_pool),
         }

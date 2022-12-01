@@ -1,6 +1,3 @@
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
-use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
@@ -11,6 +8,7 @@ use crate::domain::model::user::User;
 use crate::domain::user::UserService;
 use crate::errors::domain::DomainError;
 use crate::provider::database::token::DbTokenProvider;
+use crate::provider::database::DbConnection;
 use crate::provider::token::TokenProvider;
 
 pub struct TokenService<'a> {
@@ -20,7 +18,7 @@ pub struct TokenService<'a> {
 }
 
 impl<'a> TokenService<'a> {
-    pub fn new(config: &Settings, db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(config: &Settings, db_pool: &'a DbConnection) -> Self {
         let user_service = UserService::new(db_pool);
         let auth_service = AuthenticationService::new(config.auth.clone());
 

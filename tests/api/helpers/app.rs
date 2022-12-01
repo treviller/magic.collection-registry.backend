@@ -2,12 +2,9 @@ use std::sync::Once;
 
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, web, App};
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
-use r2d2::Pool;
 use secrecy::Secret;
 use tracing_actix_web::TracingLogger;
 use wiremock::MockServer;
@@ -17,6 +14,7 @@ use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::settings::Settings;
 use magic_collection_registry_backend::monitoring::{get_subscriber, initialize_subscriber};
 use magic_collection_registry_backend::provider::database::user::DbUserProvider;
+use magic_collection_registry_backend::provider::database::DbConnection;
 use magic_collection_registry_backend::provider::user::UserProvider;
 
 use crate::helpers::database::establish_test_connection_pool;
@@ -30,7 +28,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 static INIT_ENVIRONMENT: Once = Once::new();
 
 lazy_static! {
-    static ref DB_POOL: Pool<ConnectionManager<PgConnection>> = establish_test_connection_pool();
+    static ref DB_POOL: DbConnection = establish_test_connection_pool();
 }
 
 pub fn test_setup() {

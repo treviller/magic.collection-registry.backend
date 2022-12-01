@@ -1,10 +1,7 @@
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
-use r2d2::Pool;
-
 use crate::domain::model::set::Set;
 use crate::errors::domain::DomainError;
 use crate::provider::database::set::DbSetProvider;
+use crate::provider::database::DbConnection;
 use crate::provider::set::SetProvider;
 
 pub struct SetService<'a> {
@@ -12,7 +9,7 @@ pub struct SetService<'a> {
 }
 
 impl<'a> SetService<'a> {
-    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: &'a DbConnection) -> Self {
         Self {
             set_provider: DbSetProvider::new(db_pool),
         }

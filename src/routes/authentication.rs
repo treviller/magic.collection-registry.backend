@@ -1,8 +1,5 @@
 use actix_web::{get, post, put, web, HttpResponse};
 use anyhow::Context;
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
-use r2d2::Pool;
 use secrecy::Secret;
 use tera::Tera;
 use uuid::Uuid;
@@ -17,6 +14,7 @@ use crate::dto::user::UserDto;
 use crate::errors::api::forgotten_password::ForgottenPasswordError;
 use crate::errors::api::login::LoginError;
 use crate::errors::api::reset_password::ResetPasswordError;
+use crate::provider::database::DbConnection;
 use crate::provider::email::mailjet::MailjetClient;
 
 #[derive(serde::Deserialize)]
@@ -30,7 +28,7 @@ pub struct LoginData {
 pub async fn login(
     request_data: web::Json<LoginData>,
     config: web::Data<Settings>,
-    db_pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    db_pool: web::Data<DbConnection>,
 ) -> Result<HttpResponse, LoginError> {
     let authentication_service = AuthenticationService::new(config.auth.clone());
     let user_service = UserService::new(&db_pool);
@@ -62,7 +60,7 @@ pub async fn forgotten_password(
     request_data: web::Json<ForgottenPasswordData>,
     config: web::Data<Settings>,
     tera: web::Data<Tera>,
-    db_pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    db_pool: web::Data<DbConnection>,
 ) -> Result<HttpResponse, ForgottenPasswordError> {
     let token_service = TokenService::new(&config, &db_pool);
     let user_service = UserService::new(&db_pool);
@@ -110,7 +108,7 @@ pub async fn reset_password(
     token: web::Path<String>,
     request_data: web::Json<ResetPasswordData>,
     config: web::Data<Settings>,
-    db_pool: web::Data<Pool<ConnectionManager<PgConnection>>>,
+    db_pool: web::Data<DbConnection>,
 ) -> Result<HttpResponse, ResetPasswordError> {
     let mut token_service = TokenService::new(&config, &db_pool);
     let token_id = Uuid::parse_str(token.as_str())

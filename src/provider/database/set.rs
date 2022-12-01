@@ -1,11 +1,10 @@
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use diesel::r2d2::ConnectionManager;
 use diesel::{AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
-use r2d2::Pool;
 use uuid::Uuid;
 
 use crate::domain::model::set::{Set, SetCode, SetType};
+use crate::provider::database::DbConnection;
 use crate::provider::set::SetProvider;
 use crate::schema::sets;
 use crate::schema::sets::dsl::*;
@@ -69,11 +68,11 @@ impl Into<Set> for DbSet {
 }
 
 pub struct DbSetProvider<'a> {
-    db_pool: &'a Pool<ConnectionManager<PgConnection>>,
+    db_pool: &'a DbConnection,
 }
 
 impl<'a> DbSetProvider<'a> {
-    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: &'a DbConnection) -> Self {
         Self { db_pool }
     }
 }

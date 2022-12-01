@@ -1,10 +1,9 @@
 use diesel::prelude::*;
-use diesel::r2d2::ConnectionManager;
 use diesel::{insert_into, AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
-use r2d2::Pool;
 use uuid::Uuid;
 
 use crate::domain::model::token::{Token, TokenType};
+use crate::provider::database::DbConnection;
 use crate::provider::token::TokenProvider;
 use crate::schema::tokens;
 use crate::schema::tokens::dsl::*;
@@ -38,11 +37,11 @@ impl Into<Token> for DbToken {
 }
 
 pub struct DbTokenProvider<'a> {
-    db_pool: &'a Pool<ConnectionManager<PgConnection>>,
+    db_pool: &'a DbConnection,
 }
 
 impl<'a> DbTokenProvider<'a> {
-    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: &'a DbConnection) -> Self {
         Self { db_pool }
     }
 }

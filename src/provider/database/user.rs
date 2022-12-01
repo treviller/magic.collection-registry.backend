@@ -1,10 +1,9 @@
 use diesel::prelude::*;
-use diesel::r2d2::ConnectionManager;
-use r2d2::Pool;
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
 
 use crate::domain::model::user::User;
+use crate::provider::database::DbConnection;
 use crate::provider::user::UserProvider;
 use crate::schema::users;
 use crate::schema::users::dsl::*;
@@ -38,11 +37,11 @@ impl From<User> for DbUser {
 }
 
 pub struct DbUserProvider<'a> {
-    db_pool: &'a Pool<ConnectionManager<PgConnection>>,
+    db_pool: &'a DbConnection,
 }
 
 impl<'a> DbUserProvider<'a> {
-    pub fn new(db_pool: &'a Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: &'a DbConnection) -> Self {
         Self { db_pool }
     }
 }

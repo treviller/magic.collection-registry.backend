@@ -6,9 +6,6 @@ use actix_web::http::header;
 use actix_web::web::Data;
 use actix_web::{FromRequest, HttpRequest};
 use anyhow::{anyhow, Context};
-use diesel::r2d2::ConnectionManager;
-use diesel::PgConnection;
-use r2d2::Pool;
 use secrecy::Secret;
 use uuid::Uuid;
 
@@ -16,6 +13,7 @@ use crate::authentication::AuthenticationService;
 use crate::configuration::settings::Settings;
 use crate::domain::user::UserService;
 use crate::errors::jwt::JwtError;
+use crate::provider::database::DbConnection;
 
 #[derive(Clone)]
 pub struct User {
@@ -37,7 +35,7 @@ impl FromRequest for User {
                 .map(|settings| settings.auth.clone())
                 .unwrap();
             let db_pool = req
-                .app_data::<Data<Pool<ConnectionManager<PgConnection>>>>()
+                .app_data::<Data<DbConnection>>()
                 .map(|db_pool| db_pool.clone())
                 .unwrap();
 

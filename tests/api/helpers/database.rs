@@ -2,6 +2,7 @@ use std::env;
 
 use diesel::r2d2::ConnectionManager;
 use diesel::{Connection, PgConnection};
+use magic_collection_registry_backend::provider::database::DbConnection;
 use r2d2::{CustomizeConnection, Pool};
 
 #[derive(Debug, Clone, Copy)]
@@ -27,7 +28,7 @@ pub fn establish_connection_without_db() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn establish_test_connection_pool() -> Pool<ConnectionManager<PgConnection>> {
+pub fn establish_test_connection_pool() -> DbConnection {
     let database_url = env::var("DB_URL").expect("DB_URL must be set");
     let manager = ConnectionManager::new(database_url);
 
