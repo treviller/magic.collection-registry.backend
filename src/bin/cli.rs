@@ -1,15 +1,12 @@
-use std::fmt::Formatter;
 use std::fs::File;
 use std::future::Future;
 use std::io;
 use std::io::BufReader;
 use std::time::SystemTime;
 
-use chrono::NaiveDate;
 use dotenvy::dotenv;
 use serde::de::DeserializeOwned;
 use serde_json::Deserializer;
-use uuid::Uuid;
 
 use magic_collection_registry_backend::domain::card::CardService;
 use magic_collection_registry_backend::domain::model::card::Card;
@@ -19,6 +16,7 @@ use magic_collection_registry_backend::provider::database::{
     establish_connection_pool, DbConnection,
 };
 use magic_collection_registry_backend::provider::scryfall::api::ScryfallSetListResponse;
+use magic_collection_registry_backend::provider::scryfall::card::ScryfallCard;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -32,141 +30,6 @@ async fn main() -> io::Result<()> {
 
 fn download_file() -> String {
     "./cards-slice.json".into()
-}
-
-#[derive(serde::Deserialize)]
-struct DeserializedCard {
-    arena_id: Option<i32>,
-    object: String,
-    id: String,
-    oracle_id: Option<String>,
-    multiverse_ids: Option<Vec<i32>>,
-    mtgo_id: Option<i32>,
-    mtgo_foil_id: Option<i32>,
-    tcgplayer_id: Option<i32>,
-    cardmarket_id: Option<i32>,
-    name: String,
-    lang: String,
-    released_at: NaiveDate,
-    uri: String,
-    scryfall_uri: String,
-    layout: String,
-    highres_image: bool,
-    image_status: String,
-    image_uris: Option<ImageUris>,
-    mana_cost: Option<String>,
-    cmc: Option<f32>,
-    type_line: Option<String>,
-    oracle_text: Option<String>,
-    colors: Option<Vec<String>>,
-    color_identity: Vec<String>,
-    keywords: Vec<String>,
-    legalities: Legalities,
-    games: Vec<String>,
-    reserved: bool,
-    foil: bool,
-    nonfoil: bool,
-    finishes: Vec<String>,
-    oversized: bool,
-    promo: bool,
-    reprint: bool,
-    variation: bool,
-    set_id: Uuid,
-    set: String,
-    set_name: String,
-    set_type: String,
-    set_uri: String,
-    set_search_uri: String,
-    scryfall_set_uri: String,
-    rulings_uri: String,
-    prints_search_uri: String,
-    collector_number: String,
-    digital: bool,
-    rarity: String,
-    flavor_text: Option<String>,
-    card_back_id: Option<String>,
-    artist: Option<String>,
-    artist_ids: Option<Vec<String>>,
-    illustration_id: Option<String>,
-    border_color: String,
-    frame: String,
-    full_art: bool,
-    textless: bool,
-    booster: bool,
-    story_spotlight: bool,
-    edhrec_rank: Option<i32>,
-    prices: Prices,
-    related_uris: RelatedUris,
-}
-
-impl Into<Card> for DeserializedCard {
-    fn into(self) -> Card {
-        Card {
-            id: Uuid::new_v4(),
-            scryfall_id: self.id,
-            name: self.name,
-            lang: self.lang,
-            released_at: self.released_at,
-            set_id: self.set_id,
-        }
-    }
-}
-
-impl std::fmt::Debug for DeserializedCard {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "card : {}", self.name)
-    }
-}
-
-#[derive(serde::Deserialize, Debug)]
-struct ImageUris {
-    small: String,
-    normal: String,
-    large: String,
-    png: String,
-    art_crop: String,
-    border_crop: String,
-}
-
-#[derive(serde::Deserialize, Debug)]
-struct Legalities {
-    standard: String,
-    future: String,
-    historic: String,
-    gladiator: String,
-    pioneer: String,
-    explorer: String,
-    modern: String,
-    legacy: String,
-    pauper: String,
-    vintage: String,
-    penny: String,
-    commander: String,
-    brawl: String,
-    historicbrawl: String,
-    alchemy: String,
-    paupercommander: String,
-    duel: String,
-    oldschool: String,
-    premodern: String,
-}
-
-#[derive(serde::Deserialize, Debug)]
-struct Prices {
-    usd: Option<String>,
-    usd_foil: Option<String>,
-    usd_etched: Option<String>,
-    eur: Option<String>,
-    eur_foil: Option<String>,
-    tix: Option<String>,
-}
-
-#[derive(serde::Deserialize, Debug)]
-struct RelatedUris {
-    gatherer: Option<String>,
-    tcgplayer_infinite_articles: Option<String>,
-    tcgplayer_infinite_decks: Option<String>,
-    edhrec: Option<String>,
 }
 
 async fn bench<'a, C, F>(closure: C, name: &str, db_pool: &'a DbConnection) -> Result<(), io::Error>
@@ -207,7 +70,7 @@ impl<'a> CardLoader<'a> {
         }
     }
 
-    pub fn add(&mut self, card: DeserializedCard) {
+    pub fn add(&mut self, card: ScryfallCard) {
         self.cards.push(card.into());
         self.size += 1;
         self.total_count += 1;
