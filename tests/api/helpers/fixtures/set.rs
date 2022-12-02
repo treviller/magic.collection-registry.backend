@@ -33,7 +33,7 @@ impl SetFixtures {
         set_icon_svg_uri: &str,
     ) -> DbSet {
         DbSet {
-            id: Uuid::new_v4(),
+            id: set_id,
             code: set_code.into(),
             name: set_name.into(),
             set_type: set_set_type,

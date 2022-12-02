@@ -1,10 +1,10 @@
 use chrono::NaiveDate;
+use diesel::prelude::*;
 use diesel::{insert_into, Insertable, QueryResult, Queryable, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::domain::model::card::Card;
 use crate::provider::card::CardProvider;
-use crate::provider::database::set::DbSet;
 use crate::provider::database::DbConnection;
 use crate::schema::cards;
 use crate::schema::cards::dsl::*;
@@ -68,10 +68,15 @@ impl<'a> CardProvider for DbCardProvider<'a> {
             .execute(&mut connection);
     }
 
-    fn get_cards(&self) -> Result<Vec<Card>, diesel::result::Error> {
+    fn get_cards(&self, language: Option<String>) -> Result<Vec<Card>, diesel::result::Error> {
         let mut connection = self.db_pool.get().unwrap();
+        let mut query = cards.into_boxed();
 
-        let result: QueryResult<Vec<DbCard>> = cards.load::<DbCard>(&mut connection);
+        if let Some(language) = language {
+            query = query.filter(lang.eq(language));
+        }
+
+        let result: QueryResult<Vec<DbCard>> = query.load::<DbCard>(&mut connection);
 
         match result {
             Ok(db_cards) => {

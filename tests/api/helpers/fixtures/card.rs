@@ -31,12 +31,10 @@ impl CardFixtures {
 
 impl Fixture for CardFixtures {
     fn load(connection: &mut PgConnection, _test_password_hash: &str) -> Result<(), Error> {
-        let cards_list = vec![CardFixtures::create_card(
-            "Static Orb",
-            *SET_TEST_ID_1,
-            "2001-04-11",
-            "en",
-        )];
+        let cards_list = vec![
+            CardFixtures::create_card("Static Orb", *SET_TEST_ID_1, "2001-04-11", "en"),
+            CardFixtures::create_card("Orbe Statique", *SET_TEST_ID_1, "2001-04-11", "fr"),
+        ];
 
         for card in cards_list.iter() {
             insert_into(cards).values(card).execute(connection)?;

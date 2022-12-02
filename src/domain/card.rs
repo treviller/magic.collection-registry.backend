@@ -19,7 +19,7 @@ impl<'a> CardService<'a> {
         self.card_provider.insert_cards(cards);
     }
 
-    pub fn list_cards(&self) -> Result<Vec<Card>, DomainError> {
-        Ok(self.card_provider.get_cards().unwrap())
+    pub fn list_cards(&self, language: Option<String>) -> Result<Vec<Card>, DomainError> {
+        Ok(self.card_provider.get_cards(language).unwrap())
     }
 }

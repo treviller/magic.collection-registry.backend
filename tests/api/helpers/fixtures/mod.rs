@@ -8,6 +8,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use magic_collection_registry_backend::provider::database::establish_connection_pool;
 
 use crate::helpers::database::establish_connection_without_db;
+use crate::helpers::fixtures::card::CardFixtures;
 use crate::helpers::fixtures::set::SetFixtures;
 use crate::helpers::fixtures::token::TokenFixtures;
 use crate::helpers::fixtures::user::UserFixtures;
@@ -34,6 +35,8 @@ pub fn load_fixtures() {
         .expect("Failed to load tokens fixtures in database");
     SetFixtures::load(&mut connection, test_password_hash)
         .expect("Failed to load sets fixtures in database");
+    CardFixtures::load(&mut connection, test_password_hash)
+        .expect("Failed to load cards fixtures in database");
 }
 
 fn reinitialize_database() -> Result<(), diesel::result::Error> {

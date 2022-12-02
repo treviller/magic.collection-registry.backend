@@ -3,8 +3,8 @@ use crate::routes::responses::ListSuccessMeta;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct CardsListResponse {
-    meta: ListSuccessMeta,
-    data: Vec<CardDto>,
+    pub meta: ListSuccessMeta,
+    pub data: Vec<CardDto>,
 }
 
 impl CardsListResponse {
