@@ -6,11 +6,10 @@ use uuid::Uuid;
 use crate::domain::model::card::Card;
 use crate::provider::card::CardProvider;
 use crate::provider::database::DbConnection;
-use crate::schema::cards;
-use crate::schema::cards::dsl::*;
+use crate::schema;
 
 #[derive(Insertable, Queryable)]
-#[diesel(table_name = cards)]
+#[diesel(table_name = schema::cards)]
 pub struct DbCard {
     pub id: Uuid,
     pub scryfall_id: String,
@@ -63,17 +62,24 @@ impl<'a> CardProvider for DbCardProvider<'a> {
         let cards_list: Vec<DbCard> = cards_list.into_iter().map(|card| card.into()).collect();
 
         // TODO Yeah, I know, I will handle error cases
-        let _result = insert_into(cards)
+        let _result = insert_into(schema::cards::table)
             .values(cards_list)
             .execute(&mut connection);
     }
 
-    fn get_cards(&self, language: Option<String>) -> Result<Vec<Card>, diesel::result::Error> {
+    fn get_cards(
+        &self,
+        language: Option<String>,
+        name: Option<String>,
+    ) -> Result<Vec<Card>, diesel::result::Error> {
         let mut connection = self.db_pool.get().unwrap();
-        let mut query = cards.into_boxed();
+        let mut query = schema::cards::table.into_boxed();
 
         if let Some(language) = language {
-            query = query.filter(lang.eq(language));
+            query = query.filter(schema::cards::lang.eq(language));
+        }
+        if let Some(name) = name {
+            query = query.filter(schema::cards::name.like(format!("%{}%", name)));
         }
 
         let result: QueryResult<Vec<DbCard>> = query.load::<DbCard>(&mut connection);

@@ -43,3 +43,26 @@ pub async fn cards_list_can_be_filtered_by_language() {
         assert_eq!("fr", card.language);
     }
 }
+
+#[actix_web::test]
+pub async fn cards_list_can_be_filtered_by_name() {
+    let configuration = get_configuration().expect("Failed to build configuration.");
+
+    let req = test::TestRequest::get()
+        .uri(&add_query_parameters(
+            "/api/cards",
+            &mut vec![("name", "Deprivation")],
+        ))
+        .insert_header(ContentType::json());
+
+    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    assert!(response.status().is_success());
+
+    let json: CardsListResponse = test::read_body_json(response).await;
+
+    assert_eq!(1, json.meta.total);
+
+    for card in json.data {
+        assert_eq!("Sensory Deprivation", card.name);
+    }
+}

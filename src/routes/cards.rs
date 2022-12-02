@@ -7,6 +7,7 @@ use crate::routes::responses::cards::CardsListResponse;
 #[derive(serde::Deserialize)]
 pub struct QueryParameters {
     language: Option<String>,
+    name: Option<String>,
 }
 
 #[get("/cards")]
@@ -16,7 +17,7 @@ pub async fn list_cards(
 ) -> HttpResponse {
     let card_service = CardService::new(&db_pool);
     let cards = card_service
-        .list_cards(parameters.language.clone())
+        .list_cards(parameters.language.clone(), parameters.name.clone())
         .unwrap();
 
     HttpResponse::Ok().json(CardsListResponse::new(

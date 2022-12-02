@@ -34,6 +34,7 @@ impl Fixture for CardFixtures {
         let cards_list = vec![
             CardFixtures::create_card("Static Orb", *SET_TEST_ID_1, "2001-04-11", "en"),
             CardFixtures::create_card("Orbe Statique", *SET_TEST_ID_1, "2001-04-11", "fr"),
+            CardFixtures::create_card("Sensory Deprivation", *SET_TEST_ID_1, "2001-04-11", "en"),
         ];
 
         for card in cards_list.iter() {
