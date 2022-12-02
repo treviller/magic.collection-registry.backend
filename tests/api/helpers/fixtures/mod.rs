@@ -14,6 +14,7 @@ use crate::helpers::fixtures::user::UserFixtures;
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
+mod card;
 mod set;
 mod token;
 mod user;

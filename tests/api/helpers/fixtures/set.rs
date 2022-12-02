@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use diesel::result::Error;
 use diesel::{insert_into, PgConnection, RunQueryDsl};
+use lazy_static::lazy_static;
 use uuid::Uuid;
 
 use magic_collection_registry_backend::domain::model::set::SetType;
@@ -9,10 +10,15 @@ use magic_collection_registry_backend::schema::sets::dsl::*;
 
 use crate::helpers::fixtures::Fixture;
 
+lazy_static! {
+    pub static ref SET_TEST_ID_1: Uuid = Uuid::new_v4();
+}
+
 pub struct SetFixtures;
 
 impl SetFixtures {
     fn create_set(
+        set_id: Uuid,
         set_code: &str,
         set_name: &str,
         set_set_type: SetType,
@@ -47,6 +53,7 @@ impl SetFixtures {
 impl Fixture for SetFixtures {
     fn load(connection: &mut PgConnection, _test_password_hash: &str) -> Result<(), Error> {
         let sets_list: Vec<DbSet> = vec![SetFixtures::create_set(
+            *SET_TEST_ID_1,
             "aer",
             "Aether Revolt",
             SetType::Expansion,

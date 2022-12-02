@@ -1,4 +1,5 @@
 use crate::domain::model::card::Card;
+use crate::errors::domain::DomainError;
 use crate::provider::card::CardProvider;
 use crate::provider::database::card::DbCardProvider;
 use crate::provider::database::DbConnection;
@@ -16,5 +17,9 @@ impl<'a> CardService<'a> {
 
     pub fn add_cards(&self, cards: Vec<Card>) {
         self.card_provider.insert_cards(cards);
+    }
+
+    pub fn list_cards(&self) -> Result<Vec<Card>, DomainError> {
+        Ok(self.card_provider.get_cards().unwrap())
     }
 }

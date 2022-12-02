@@ -1,3 +1,4 @@
+pub mod cards;
 pub mod sets;
 
 #[derive(serde::Serialize, serde::Deserialize)]
