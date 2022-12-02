@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use diesel::{insert_into, Insertable, QueryResult, Queryable, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::domain::model::card::Card;
+use crate::domain::model::card::{Card, CardRarity};
 use crate::provider::card::CardProvider;
 use crate::provider::database::DbConnection;
 use crate::schema;
@@ -16,6 +16,7 @@ pub struct DbCard {
     pub name: String,
     pub lang: String,
     pub released_at: NaiveDate,
+    pub rarity: CardRarity,
     pub set_id: Uuid,
 }
 
@@ -28,6 +29,7 @@ impl From<Card> for DbCard {
             lang: card.lang,
             released_at: card.released_at,
             set_id: card.set_id,
+            rarity: card.rarity,
         }
     }
 }
@@ -41,6 +43,7 @@ impl Into<Card> for DbCard {
             lang: self.lang,
             released_at: self.released_at,
             set_id: self.set_id,
+            rarity: self.rarity,
         }
     }
 }
@@ -71,6 +74,7 @@ impl<'a> CardProvider for DbCardProvider<'a> {
         &self,
         language: Option<String>,
         name: Option<String>,
+        rarity: Option<CardRarity>,
     ) -> Result<Vec<Card>, diesel::result::Error> {
         let mut connection = self.db_pool.get().unwrap();
         let mut query = schema::cards::table.into_boxed();
@@ -80,6 +84,9 @@ impl<'a> CardProvider for DbCardProvider<'a> {
         }
         if let Some(name) = name {
             query = query.filter(schema::cards::name.like(format!("%{}%", name)));
+        }
+        if let Some(rarity) = rarity {
+            query = query.filter(schema::cards::rarity.eq(rarity));
         }
 
         let result: QueryResult<Vec<DbCard>> = query.load::<DbCard>(&mut connection);

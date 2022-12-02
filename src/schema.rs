@@ -2,6 +2,10 @@
 
 pub mod sql_types {
     #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "card_rarity"))]
+    pub struct CardRarity;
+
+    #[derive(diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "set_type"))]
     pub struct SetType;
 
@@ -11,12 +15,16 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::CardRarity;
+
     cards (id) {
         id -> Uuid,
         scryfall_id -> Varchar,
         name -> Varchar,
         lang -> Varchar,
         released_at -> Date,
+        rarity -> CardRarity,
         set_id -> Uuid,
     }
 }

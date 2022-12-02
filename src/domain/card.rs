@@ -1,4 +1,4 @@
-use crate::domain::model::card::Card;
+use crate::domain::model::card::{Card, CardRarity};
 use crate::errors::domain::DomainError;
 use crate::provider::card::CardProvider;
 use crate::provider::database::card::DbCardProvider;
@@ -23,7 +23,11 @@ impl<'a> CardService<'a> {
         &self,
         language: Option<String>,
         name: Option<String>,
+        rarity: Option<CardRarity>,
     ) -> Result<Vec<Card>, DomainError> {
-        Ok(self.card_provider.get_cards(language, name).unwrap())
+        Ok(self
+            .card_provider
+            .get_cards(language, name, rarity)
+            .unwrap())
     }
 }

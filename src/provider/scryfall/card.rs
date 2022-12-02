@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 use uuid::Uuid;
 
 use crate::domain::model::card::Card;
+use crate::domain::model::card::CardRarity;
 
 #[derive(serde::Deserialize)]
 pub struct ScryfallCard {
@@ -53,7 +54,7 @@ pub struct ScryfallCard {
     _prints_search_uri: String,
     _collector_number: String,
     _digital: bool,
-    _rarity: String,
+    rarity: CardRarity,
     _flavor_text: Option<String>,
     _card_back_id: Option<String>,
     _artist: Option<String>,
@@ -79,6 +80,7 @@ impl Into<Card> for ScryfallCard {
             lang: self.lang,
             released_at: self.released_at,
             set_id: self.set_id,
+            rarity: self.rarity,
         }
     }
 }
