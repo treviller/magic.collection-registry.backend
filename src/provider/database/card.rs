@@ -89,7 +89,9 @@ impl<'a> CardProvider for DbCardProvider<'a> {
             query = query.filter(schema::cards::rarity.eq(rarity));
         }
 
-        let result: QueryResult<Vec<DbCard>> = query.load::<DbCard>(&mut connection);
+        let result: QueryResult<Vec<DbCard>> = query
+            .order(schema::cards::name.asc())
+            .load::<DbCard>(&mut connection);
 
         match result {
             Ok(db_cards) => {
