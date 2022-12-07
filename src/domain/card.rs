@@ -1,8 +1,10 @@
 use crate::domain::model::card::{Card, CardRarity};
 use crate::errors::domain::DomainError;
-use crate::provider::card::CardProvider;
+use crate::provider::card::{CardFilterParameters, CardProvider};
 use crate::provider::database::card::DbCardProvider;
 use crate::provider::database::DbConnection;
+use crate::routes::cards::QueryParameters;
+use crate::routes::Pagination;
 
 pub struct CardService<'a> {
     card_provider: DbCardProvider<'a>,
@@ -21,13 +23,9 @@ impl<'a> CardService<'a> {
 
     pub fn list_cards(
         &self,
-        language: Option<String>,
-        name: Option<String>,
-        rarity: Option<CardRarity>,
+        filters: CardFilterParameters,
+        pagination: &Pagination,
     ) -> Result<Vec<Card>, DomainError> {
-        Ok(self
-            .card_provider
-            .get_cards(language, name, rarity)
-            .unwrap())
+        Ok(self.card_provider.get_cards(filters, pagination).unwrap())
     }
 }

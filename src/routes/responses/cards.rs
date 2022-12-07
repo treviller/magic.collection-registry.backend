@@ -1,6 +1,6 @@
 use crate::dto::card::CardDto;
 use crate::routes::responses::PaginatedListSuccessMeta;
-use crate::routes::PageId;
+use crate::routes::Pagination;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct CardsListResponse {
@@ -9,7 +9,7 @@ pub struct CardsListResponse {
 }
 
 impl CardsListResponse {
-    pub fn new(cards: Vec<CardDto>, current_page: PageId) -> Self {
+    pub fn new(cards: Vec<CardDto>, current_page: Pagination) -> Self {
         Self {
             meta: PaginatedListSuccessMeta {
                 success: true,
