@@ -64,6 +64,7 @@ impl FromRequest for User {
 
             user_service
                 .get_user_from_username(&jwt_claims.sub)
+                .await
                 .context("Failed to found user from jwt")
                 .map_err(JwtError::InvalidToken)
         })

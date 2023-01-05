@@ -2,16 +2,9 @@ use chrono::NaiveDate;
 use strum_macros::EnumString;
 use uuid::Uuid;
 
-#[derive(
-    Debug,
-    PartialEq,
-    Clone,
-    EnumString,
-    serde::Serialize,
-    serde::Deserialize,
-    diesel_derive_enum::DbEnum,
-)]
-#[DieselTypePath = "crate::schema::sql_types::CardRarity"]
+#[derive(Debug, PartialEq, Clone, EnumString, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[sqlx(type_name = "card_rarity")]
+#[sqlx(rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum CardRarity {

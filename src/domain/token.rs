@@ -7,12 +7,11 @@ use crate::domain::model::token::{Token, TokenType};
 use crate::domain::model::user::User;
 use crate::domain::user::UserService;
 use crate::errors::domain::DomainError;
-use crate::provider::database::token::DbTokenProvider;
+use crate::provider::database;
 use crate::provider::database::DbConnection;
-use crate::provider::token::TokenProvider;
 
 pub struct TokenService<'a> {
-    token_provider: DbTokenProvider<'a>,
+    db_pool: &'a DbConnection,
     user_service: UserService<'a>,
     auth_service: AuthenticationService,
 }
@@ -23,39 +22,43 @@ impl<'a> TokenService<'a> {
         let auth_service = AuthenticationService::new(config.auth.clone());
 
         Self {
-            token_provider: DbTokenProvider::new(db_pool),
+            db_pool,
             user_service,
             auth_service,
         }
     }
 
-    pub fn reset_user_password(
+    pub async fn reset_user_password(
         &mut self,
         token_id: Uuid,
         password: &Secret<String>,
     ) -> Result<(), DomainError> {
-        let token = self.token_provider.find_token_by_id(token_id).unwrap();
-        let user = self.user_service.get_user_from_id(token.user_id)?;
+        let token = database::token::find_token_by_id(self.db_pool, token_id)
+            .await
+            .unwrap();
+        let user = self.user_service.get_user_from_id(token.user_id).await?;
 
         match token.token_type {
             TokenType::ResetPassword => {
                 let password_hash = self.auth_service.hash_password(&password);
 
-                self.user_service.update_user_password(&user, password_hash);
+                self.user_service
+                    .update_user_password(&user, password_hash)
+                    .await;
             }
         }
 
         Ok(())
     }
 
-    pub fn generate_token_for_user(&self, user: &User) -> Result<Token, DomainError> {
+    pub async fn generate_token_for_user(&self, user: &User) -> Result<Token, DomainError> {
         let token = Token {
             id: Uuid::new_v4(),
             token_type: TokenType::ResetPassword,
             user_id: user.id,
         };
 
-        self.token_provider.save_token(token.clone());
+        database::token::save_token(self.db_pool, token.clone()).await;
 
         Ok(token)
     }

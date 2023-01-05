@@ -37,6 +37,7 @@ pub async fn list_cards(
     let card_service = CardService::new(&db_pool);
     let cards = card_service
         .list_cards(parameters.into_inner().into(), &pagination)
+        .await
         .unwrap();
 
     Ok(HttpResponse::Ok().json(CardsListResponse::new(

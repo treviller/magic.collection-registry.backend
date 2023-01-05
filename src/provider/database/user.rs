@@ -1,15 +1,10 @@
-use diesel::prelude::*;
 use secrecy::{ExposeSecret, Secret};
 use uuid::Uuid;
 
 use crate::domain::model::user::User;
 use crate::provider::database::DbConnection;
-use crate::provider::user::UserProvider;
-use crate::schema::users;
-use crate::schema::users::dsl::*;
 
-#[derive(AsChangeset, Queryable, Identifiable, Insertable)]
-#[diesel(table_name = users)]
+#[derive(sqlx::FromRow)]
 pub struct DbUser {
     pub id: Uuid,
     pub username: String,
@@ -36,50 +31,46 @@ impl From<User> for DbUser {
     }
 }
 
-pub struct DbUserProvider<'a> {
-    db_pool: &'a DbConnection,
-}
+pub async fn find_one_by_username(db_pool: &DbConnection, searched_username: &str) -> Option<User> {
+    let result: Option<DbUser> = sqlx::query_as!(
+        DbUser,
+        "SELECT * FROM users WHERE username = $1 LIMIT 1",
+        searched_username
+    )
+    .fetch_optional(db_pool)
+    .await
+    .expect("No error okay");
 
-impl<'a> DbUserProvider<'a> {
-    pub fn new(db_pool: &'a DbConnection) -> Self {
-        Self { db_pool }
+    match result {
+        Some(user) => Some(user.into()),
+        None => None, //TODO handle all error cases
     }
 }
 
-impl<'a> UserProvider for DbUserProvider<'a> {
-    fn find_one_by_username(&self, searched_username: &str) -> Option<User> {
-        let mut connection = self.db_pool.get().unwrap();
+pub async fn find_one_by_id(db_pool: &DbConnection, user_id: Uuid) -> Option<User> {
+    let result: Option<DbUser> =
+        sqlx::query_as!(DbUser, "SELECT * FROM users WHERE id = $1 LIMIT 1", user_id)
+            .fetch_optional(db_pool)
+            .await
+            .expect("No error okay");
 
-        let result: QueryResult<DbUser> = users
-            .filter(username.eq(searched_username))
-            .limit(1)
-            .get_result::<DbUser>(&mut connection);
-
-        match result {
-            Ok(user) => Some(user.into()),
-            Err(_error) => None, //TODO handle all error cases
-        }
+    match result {
+        Some(user) => Some(user.into()),
+        None => None, //TODO handle all error cases
     }
+}
 
-    fn find_one_by_id(&self, user_id: Uuid) -> Option<User> {
-        let mut connection = self.db_pool.get().unwrap();
-
-        let result: QueryResult<DbUser> = users
-            .filter(id.eq(user_id))
-            .limit(1)
-            .get_result::<DbUser>(&mut connection);
-
-        match result {
-            Ok(user) => Some(user.into()),
-            Err(_error) => None, //TODO handle all error cases
-        }
-    }
-
-    fn update_user(&mut self, user: User) {
-        let mut connection = self.db_pool.get().unwrap();
-        let user: DbUser = user.into();
-
-        //TODO handle all error cases
-        let _ = diesel::update(&user).set(&user).execute(&mut connection);
-    }
+pub async fn update_user_password(
+    db_pool: &DbConnection,
+    user_id: Uuid,
+    new_password: Secret<String>,
+) {
+    sqlx::query!(
+        "UPDATE users SET password = $1 WHERE id = $2",
+        new_password.expose_secret(),
+        user_id
+    )
+    .execute(db_pool)
+    .await
+    .expect("No error okay"); //TODO handle all error cases
 }

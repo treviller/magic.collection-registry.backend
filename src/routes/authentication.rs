@@ -35,6 +35,7 @@ pub async fn login(
 
     let user = user_service
         .get_user_from_username(&request_data.0.login)
+        .await
         .context("Unable to found user with username")
         .map_err(LoginError::InvalidCredentials)?;
 
@@ -68,7 +69,10 @@ pub async fn forgotten_password(
 
     let user_email =
         UserEmail::parse(request_data.0.email).map_err(ForgottenPasswordError::ValidationError)?;
-    let user = match user_service.get_user_from_username(user_email.as_ref()) {
+    let user = match user_service
+        .get_user_from_username(user_email.as_ref())
+        .await
+    {
         Ok(u) => u,
         Err(_) => {
             tracing::info!("Unable to found user with email {}", user_email.as_ref());
@@ -78,6 +82,7 @@ pub async fn forgotten_password(
 
     let token = token_service
         .generate_token_for_user(&user)
+        .await
         .context("An error occurred during token generation.")
         .map_err(ForgottenPasswordError::UnexpectedError)?;
 
@@ -117,6 +122,7 @@ pub async fn reset_password(
 
     token_service
         .reset_user_password(token_id, &request_data.0.password)
+        .await
         .context("Unable to reset user password")
         .map_err(ResetPasswordError::InvalidToken)?;
 

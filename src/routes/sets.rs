@@ -9,7 +9,7 @@ use crate::routes::responses::sets::SetListResponse;
 pub async fn get_sets_list(db_pool: web::Data<DbConnection>) -> HttpResponse {
     let set_service = SetService::new(&db_pool);
 
-    let sets = set_service.get_sets_list().unwrap();
+    let sets = set_service.get_sets_list().await.unwrap();
 
     let set_dtos = sets.into_iter().map(|set| SetDto::new(set)).collect();
 

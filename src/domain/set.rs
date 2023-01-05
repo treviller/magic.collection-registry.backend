@@ -1,25 +1,22 @@
 use crate::domain::model::set::Set;
 use crate::errors::domain::DomainError;
-use crate::provider::database::set::DbSetProvider;
+use crate::provider::database;
 use crate::provider::database::DbConnection;
-use crate::provider::set::SetProvider;
 
 pub struct SetService<'a> {
-    set_provider: DbSetProvider<'a>,
+    db_pool: &'a DbConnection,
 }
 
 impl<'a> SetService<'a> {
     pub fn new(db_pool: &'a DbConnection) -> Self {
-        Self {
-            set_provider: DbSetProvider::new(db_pool),
-        }
+        Self { db_pool }
     }
 
-    pub fn get_sets_list(&self) -> Result<Vec<Set>, DomainError> {
-        Ok(self.set_provider.get_all_sets().unwrap())
+    pub async fn get_sets_list(&self) -> Result<Vec<Set>, DomainError> {
+        Ok(database::set::get_all_sets(self.db_pool).await.unwrap())
     }
 
-    pub fn add_sets(&self, sets: Vec<Set>) {
-        self.set_provider.insert_sets(sets);
+    pub async fn add_sets(&self, sets: Vec<Set>) {
+        database::set::insert_sets(self.db_pool, sets).await;
     }
 }

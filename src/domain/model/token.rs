@@ -1,7 +1,8 @@
 use uuid::Uuid;
 
-#[derive(Clone, Debug, diesel_derive_enum::DbEnum)]
-#[DieselTypePath = "crate::schema::sql_types::TokenType"]
+#[derive(Clone, Debug, sqlx::Type)]
+#[sqlx(type_name = "token_type")]
+#[sqlx(rename_all = "snake_case")]
 pub enum TokenType {
     ResetPassword,
 }

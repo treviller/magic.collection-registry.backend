@@ -1,16 +1,11 @@
 use chrono::NaiveDate;
-use diesel::prelude::*;
-use diesel::{insert_into, AsChangeset, Identifiable, Insertable, Queryable, RunQueryDsl};
+use sqlx::{Postgres, QueryBuilder};
 use uuid::Uuid;
 
 use crate::domain::model::set::{Set, SetCode, SetType};
 use crate::provider::database::DbConnection;
-use crate::provider::set::SetProvider;
-use crate::schema::sets;
-use crate::schema::sets::dsl::*;
 
-#[derive(Queryable, Identifiable, AsChangeset, Insertable)]
-#[diesel(table_name = sets)]
+#[derive(sqlx::FromRow)]
 pub struct DbSet {
     pub id: Uuid,
     pub code: String,
@@ -67,37 +62,45 @@ impl Into<Set> for DbSet {
     }
 }
 
-pub struct DbSetProvider<'a> {
-    db_pool: &'a DbConnection,
-}
+pub async fn get_all_sets(db_pool: &DbConnection) -> Result<Vec<Set>, sqlx::Error> {
+    let result: sqlx::Result<Vec<DbSet>> = sqlx::query_as::<Postgres, DbSet>("SELECT * FROM sets")
+        .fetch_all(db_pool)
+        .await;
 
-impl<'a> DbSetProvider<'a> {
-    pub fn new(db_pool: &'a DbConnection) -> Self {
-        Self { db_pool }
-    }
-}
-
-impl<'a> SetProvider for DbSetProvider<'a> {
-    fn get_all_sets(&self) -> Result<Vec<Set>, diesel::result::Error> {
-        let mut connection = self.db_pool.get().unwrap();
-
-        let result: QueryResult<Vec<DbSet>> = sets.load::<DbSet>(&mut connection);
-
-        match result {
-            Ok(db_sets) => {
-                let list = db_sets.into_iter().map(|set| set.into()).collect();
-                Ok(list)
-            }
-            Err(_) => Ok(vec![]), //TODO handle error cases
+    match result {
+        Ok(db_sets) => {
+            let list = db_sets.into_iter().map(|set| set.into()).collect();
+            Ok(list)
         }
+        Err(_) => Ok(vec![]), //TODO handle error cases
     }
+}
 
-    fn insert_sets(&self, sets_list: Vec<Set>) {
-        let mut connection = self.db_pool.get().unwrap();
+pub async fn insert_sets(db_pool: &DbConnection, sets_list: Vec<Set>) {
+    let sets_list: Vec<DbSet> = sets_list.into_iter().map(|set| set.into()).collect();
 
-        let sets_list: Vec<DbSet> = sets_list.into_iter().map(|set| set.into()).collect();
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new("INSERT INTO sets(id, code, name, set_type, released_at, block_code, block, parent_set_id, card_count, printed_size, foil_only, non_foil_only, icon_svg_uri) ");
 
-        //TODO handle error cases
-        let _result = insert_into(sets).values(sets_list).execute(&mut connection);
-    }
+    query_builder.push_values(sets_list, |mut builder, set| {
+        builder
+            .push_bind(set.id)
+            .push_bind(set.code)
+            .push_bind(set.name)
+            .push_bind(set.set_type)
+            .push_bind(set.released_at)
+            .push_bind(set.block_code)
+            .push_bind(set.block)
+            .push_bind(set.parent_set_id)
+            .push_bind(set.card_count)
+            .push_bind(set.printed_size)
+            .push_bind(set.foil_only)
+            .push_bind(set.non_foil_only)
+            .push_bind(set.icon_svg_uri);
+    });
+
+    let _result = query_builder
+        .build()
+        .execute(db_pool)
+        .await
+        .expect("No error okay");
 }

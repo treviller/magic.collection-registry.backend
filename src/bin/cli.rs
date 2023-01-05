@@ -24,12 +24,14 @@ async fn main() -> io::Result<()> {
 
     let db_pool = establish_connection_pool();
 
-    bench(load_sets, "Loading sets", &db_pool).await;
+    bench(load_sets, "Loading sets", &db_pool)
+        .await
+        .expect("An error occurred when loading sets");
     bench(load_cards, "Loading cards", &db_pool).await
 }
 
 fn download_file() -> String {
-    "./cards-slice.json".into()
+    "./cards-full.json".into()
 }
 
 async fn bench<'a, C, F>(closure: C, name: &str, db_pool: &'a DbConnection) -> Result<(), io::Error>
@@ -70,13 +72,13 @@ impl<'a> CardLoader<'a> {
         }
     }
 
-    pub fn add(&mut self, card: ScryfallCard) {
+    pub async fn add(&mut self, card: ScryfallCard) {
         self.cards.push(card.into());
         self.size += 1;
         self.total_count += 1;
 
         if self.size >= self.max_size {
-            self.flush();
+            self.flush().await;
         }
     }
 
@@ -84,16 +86,18 @@ impl<'a> CardLoader<'a> {
         self.cards.pop()
     }
 
-    pub fn terminate(&mut self) {
+    pub async fn terminate(&mut self) {
         println!("{} cards loaded.", self.total_count);
 
         if self.size > 0 {
-            self.flush()
+            self.flush().await
         }
     }
 
-    fn flush(&mut self) {
-        self.card_service.add_cards(self.cards.drain(1..).collect());
+    async fn flush(&mut self) {
+        self.card_service
+            .add_cards(self.cards.drain(1..).collect())
+            .await;
         self.size = 0;
     }
 }
@@ -118,10 +122,10 @@ async fn load_cards(db_pool: &DbConnection) -> Result<(), io::Error> {
             }
         };
 
-        cards_loader.add(card);
+        cards_loader.add(card).await;
     }
 
-    cards_loader.terminate();
+    cards_loader.terminate().await;
 
     Ok(())
 }
@@ -141,7 +145,7 @@ async fn load_sets(db_pool: &DbConnection) -> Result<(), io::Error> {
 
     let set_service = SetService::new(db_pool);
 
-    set_service.add_sets(sets);
+    set_service.add_sets(sets).await;
 
     Ok(())
 }

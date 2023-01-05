@@ -20,10 +20,9 @@ impl Into<String> for SetCode {
     }
 }
 
-#[derive(
-    Clone, Debug, EnumString, serde::Serialize, serde::Deserialize, diesel_derive_enum::DbEnum,
-)]
-#[DieselTypePath = "crate::schema::sql_types::SetType"]
+#[derive(Clone, Debug, EnumString, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[sqlx(type_name = "set_type")]
+#[sqlx(rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum SetType {

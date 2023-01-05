@@ -1,16 +1,13 @@
 use chrono::NaiveDate;
-use diesel::prelude::*;
-use diesel::{insert_into, Insertable, QueryResult, Queryable, RunQueryDsl};
+use sqlx::{Postgres, QueryBuilder};
 use uuid::Uuid;
 
 use crate::domain::model::card::{Card, CardRarity};
-use crate::provider::card::{CardFilterParameters, CardProvider};
+use crate::provider::card::CardFilterParameters;
 use crate::provider::database::DbConnection;
 use crate::routes::Pagination;
-use crate::schema;
 
-#[derive(Insertable, Queryable)]
-#[diesel(table_name = schema::cards)]
+#[derive(sqlx::FromRow)]
 pub struct DbCard {
     pub id: Uuid,
     pub scryfall_id: String,
@@ -49,58 +46,68 @@ impl Into<Card> for DbCard {
     }
 }
 
-pub struct DbCardProvider<'a> {
-    db_pool: &'a DbConnection,
+pub async fn insert_cards(db_pool: &DbConnection, cards_list: Vec<Card>) {
+    let cards_list: Vec<DbCard> = cards_list.into_iter().map(|card| card.into()).collect();
+
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+        "INSERT INTO cards (id, scryfall_id, name, lang, released_at, set_id, rarity) ",
+    );
+
+    query_builder.push_values(cards_list, |mut builder, card| {
+        builder
+            .push_bind(card.id)
+            .push_bind(card.scryfall_id)
+            .push_bind(card.name)
+            .push_bind(card.lang)
+            .push_bind(card.released_at)
+            .push_bind(card.set_id)
+            .push_bind(card.rarity);
+    });
+
+    let _result = query_builder
+        .build()
+        .execute(db_pool)
+        .await
+        .expect("No error okay");
 }
 
-impl<'a> DbCardProvider<'a> {
-    pub fn new(db_pool: &'a DbConnection) -> Self {
-        Self { db_pool }
+pub async fn get_cards(
+    db_pool: &DbConnection,
+    filters: CardFilterParameters,
+    pagination: &Pagination,
+) -> Result<Vec<Card>, sqlx::Error> {
+    let mut query_builder: QueryBuilder<Postgres> =
+        QueryBuilder::new("SELECT * FROM cards WHERE TRUE");
+
+    if let Some(language) = filters.language {
+        query_builder.push(" AND lang = ");
+        query_builder.push_bind(language);
     }
-}
-
-impl<'a> CardProvider for DbCardProvider<'a> {
-    fn insert_cards(&self, cards_list: Vec<Card>) {
-        let mut connection = self.db_pool.get().unwrap();
-
-        let cards_list: Vec<DbCard> = cards_list.into_iter().map(|card| card.into()).collect();
-
-        // TODO Yeah, I know, I will handle error cases
-        let _result = insert_into(schema::cards::table)
-            .values(cards_list)
-            .execute(&mut connection);
+    if let Some(name) = filters.name {
+        query_builder.push(" AND name LIKE ");
+        query_builder.push_bind(format!("%{}%", name));
+    }
+    if let Some(rarity) = filters.rarity {
+        query_builder.push(" AND rarity = ");
+        query_builder.push_bind(rarity);
     }
 
-    fn get_cards(
-        &self,
-        filters: CardFilterParameters,
-        pagination: &Pagination,
-    ) -> Result<Vec<Card>, diesel::result::Error> {
-        let mut connection = self.db_pool.get().unwrap();
-        let mut query = schema::cards::table.into_boxed();
+    query_builder
+        .push(" ORDER BY name ASC LIMIT ")
+        .push_bind(pagination.get_size() as i32)
+        .push(" OFFSET ")
+        .push_bind(pagination.get_offset() as i32);
 
-        if let Some(language) = filters.language {
-            query = query.filter(schema::cards::lang.eq(language));
-        }
-        if let Some(name) = filters.name {
-            query = query.filter(schema::cards::name.like(format!("%{}%", name)));
-        }
-        if let Some(rarity) = filters.rarity {
-            query = query.filter(schema::cards::rarity.eq(rarity));
-        }
+    let result = query_builder
+        .build_query_as::<DbCard>()
+        .fetch_all(db_pool)
+        .await;
 
-        let result: QueryResult<Vec<DbCard>> = query
-            .order(schema::cards::name.asc())
-            .offset(pagination.get_offset() as i64)
-            .limit(pagination.get_size() as i64)
-            .load::<DbCard>(&mut connection);
-
-        match result {
-            Ok(db_cards) => {
-                let list = db_cards.into_iter().map(|card| card.into()).collect();
-                Ok(list)
-            }
-            Err(_) => Ok(vec![]), //TODO handle error cases
+    match result {
+        Ok(db_cards) => {
+            let list = db_cards.into_iter().map(|card| card.into()).collect();
+            Ok(list)
         }
+        Err(_) => Ok(vec![]), //TODO handle error cases
     }
 }

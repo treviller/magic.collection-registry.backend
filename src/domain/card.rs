@@ -1,31 +1,30 @@
-use crate::domain::model::card::{Card, CardRarity};
+use crate::domain::model::card::Card;
 use crate::errors::domain::DomainError;
-use crate::provider::card::{CardFilterParameters, CardProvider};
-use crate::provider::database::card::DbCardProvider;
+use crate::provider::card::CardFilterParameters;
+use crate::provider::database;
 use crate::provider::database::DbConnection;
-use crate::routes::cards::QueryParameters;
 use crate::routes::Pagination;
 
 pub struct CardService<'a> {
-    card_provider: DbCardProvider<'a>,
+    db_pool: &'a DbConnection,
 }
 
 impl<'a> CardService<'a> {
     pub fn new(db_pool: &'a DbConnection) -> Self {
-        Self {
-            card_provider: DbCardProvider::new(db_pool),
-        }
+        Self { db_pool }
     }
 
-    pub fn add_cards(&self, cards: Vec<Card>) {
-        self.card_provider.insert_cards(cards);
+    pub async fn add_cards(&self, cards: Vec<Card>) {
+        database::card::insert_cards(self.db_pool, cards).await;
     }
 
-    pub fn list_cards(
+    pub async fn list_cards(
         &self,
         filters: CardFilterParameters,
         pagination: &Pagination,
     ) -> Result<Vec<Card>, DomainError> {
-        Ok(self.card_provider.get_cards(filters, pagination).unwrap())
+        Ok(database::card::get_cards(self.db_pool, filters, pagination)
+            .await
+            .unwrap())
     }
 }
