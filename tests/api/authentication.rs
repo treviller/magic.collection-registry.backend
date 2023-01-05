@@ -7,17 +7,18 @@ use wiremock::{Mock, ResponseTemplate};
 
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::loader::get_configuration;
+use magic_collection_registry_backend::provider::database::DbConnection;
 
 use crate::helpers;
-use crate::helpers::{generate_access_token, mock_email_server, test_setup};
+use crate::helpers::{generate_access_token, mock_email_server};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct LoginJsonResponse {
     access_token: String,
 }
 
-#[actix_web::test]
-pub async fn login_should_return_200() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn login_should_return_200(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
     let authentication_service = AuthenticationService::new(configuration.auth.clone());
 
@@ -29,7 +30,7 @@ pub async fn login_should_return_200() {
             "password": "test"
         }));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
     let json: LoginJsonResponse = test::read_body_json(response).await;
@@ -39,10 +40,8 @@ pub async fn login_should_return_200() {
         .expect("Access token should be a valid JWT");
 }
 
-#[actix_web::test]
-pub async fn get_profile_should_return_200() {
-    //We are forced to setup here as we need a ready connection to the database when generating the jwt
-    test_setup();
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn get_profile_should_return_200(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
@@ -52,30 +51,31 @@ pub async fn get_profile_should_return_200() {
             header::AUTHORIZATION,
             format!(
                 "Bearer {}",
-                generate_access_token(&configuration)
+                generate_access_token(&db_pool, &configuration)
+                    .await
                     .expose_secret()
                     .as_str()
             ),
         ));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 }
 
-#[actix_web::test]
-pub async fn get_profile_without_jwt_should_return_401() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn get_profile_without_jwt_should_return_401(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
         .uri("/api/profile")
         .insert_header(ContentType::json());
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert_eq!(response.status().as_u16(), 401);
 }
 
-#[actix_web::test]
-pub async fn forgotten_password_should_send_email() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn forgotten_password_should_send_email(db_pool: DbConnection) {
     let mut configuration = get_configuration().expect("Failed to build configuration.");
     let email_server = mock_email_server(&mut configuration).await;
 
@@ -93,12 +93,12 @@ pub async fn forgotten_password_should_send_email() {
             "email": "test@email.com"
         }));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 }
 
-#[actix_web::test]
-pub async fn reset_password_should_return_200_with_valid_token() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn reset_password_should_return_200_with_valid_token(db_pool: DbConnection) {
     let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
     let configuration = get_configuration().expect("Failed to build configuration.");
 
@@ -109,12 +109,12 @@ pub async fn reset_password_should_return_200_with_valid_token() {
             "password": "nosecret"
         }));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 }
 
-#[actix_web::test]
-pub async fn reset_password_should_return_400_with_invalid_token() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn reset_password_should_return_400_with_invalid_token(db_pool: DbConnection) {
     let token = "invalidtoken";
     let configuration = get_configuration().expect("Failed to build configuration.");
 
@@ -125,12 +125,12 @@ pub async fn reset_password_should_return_400_with_invalid_token() {
             "password": "nosecret"
         }));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert_eq!(response.status().as_u16(), 400);
 }
 
-#[actix_web::test]
-pub async fn reset_password_should_return_400_with_invalid_payload() {
+#[sqlx::test(fixtures("users", "tokens"))]
+pub async fn reset_password_should_return_400_with_invalid_payload(db_pool: DbConnection) {
     let token = "bbfddad7-940e-4a85-a35d-925c91b438bd";
     let configuration = get_configuration().expect("Failed to build configuration.");
 
@@ -141,6 +141,6 @@ pub async fn reset_password_should_return_400_with_invalid_payload() {
             "notusedkey": "blabla"
         }));
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert_eq!(response.status().as_u16(), 400);
 }

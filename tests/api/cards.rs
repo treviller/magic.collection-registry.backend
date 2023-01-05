@@ -3,27 +3,28 @@ use actix_web::test;
 
 use magic_collection_registry_backend::configuration::loader::get_configuration;
 use magic_collection_registry_backend::domain::model::card::CardRarity;
+use magic_collection_registry_backend::provider::database::DbConnection;
 use magic_collection_registry_backend::routes::responses::cards::CardsListResponse;
 
 use crate::helpers;
 use crate::helpers::add_query_parameters;
 
-#[actix_web::test]
-pub async fn cards_list_should_return_200() {
+#[sqlx::test(fixtures("sets", "cards"))]
+pub async fn cards_list_should_return_200(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
         .uri("/api/cards")
         .insert_header(ContentType::json());
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
     let _json: CardsListResponse = test::read_body_json(response).await;
 }
 
-#[actix_web::test]
-pub async fn cards_list_can_be_filtered_by_language() {
+#[sqlx::test(fixtures("sets", "cards"))]
+pub async fn cards_list_can_be_filtered_by_language(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
@@ -33,7 +34,7 @@ pub async fn cards_list_can_be_filtered_by_language() {
         ))
         .insert_header(ContentType::json());
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
     let json: CardsListResponse = test::read_body_json(response).await;
@@ -45,8 +46,8 @@ pub async fn cards_list_can_be_filtered_by_language() {
     }
 }
 
-#[actix_web::test]
-pub async fn cards_list_can_be_filtered_by_name() {
+#[sqlx::test(fixtures("sets", "cards"))]
+pub async fn cards_list_can_be_filtered_by_name(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
@@ -56,7 +57,7 @@ pub async fn cards_list_can_be_filtered_by_name() {
         ))
         .insert_header(ContentType::json());
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
     let json: CardsListResponse = test::read_body_json(response).await;
@@ -68,8 +69,8 @@ pub async fn cards_list_can_be_filtered_by_name() {
     }
 }
 
-#[actix_web::test]
-pub async fn cards_list_can_be_filtered_by_rarity() {
+#[sqlx::test(fixtures("sets", "cards"))]
+pub async fn cards_list_can_be_filtered_by_rarity(db_pool: DbConnection) {
     let configuration = get_configuration().expect("Failed to build configuration.");
 
     let req = test::TestRequest::get()
@@ -79,7 +80,7 @@ pub async fn cards_list_can_be_filtered_by_rarity() {
         ))
         .insert_header(ContentType::json());
 
-    let response = helpers::init_test_app_and_make_request(configuration, req).await;
+    let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
     let json: CardsListResponse = test::read_body_json(response).await;

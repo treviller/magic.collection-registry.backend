@@ -3,7 +3,6 @@ use urlencoding::encode;
 pub use app::*;
 
 mod app;
-pub mod database;
 
 pub fn add_query_parameters(uri: &str, parameters: &mut Vec<(&str, &str)>) -> String {
     let first_param = match parameters.pop() {
