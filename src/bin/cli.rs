@@ -15,8 +15,10 @@ use magic_collection_registry_backend::domain::set::SetService;
 use magic_collection_registry_backend::provider::database::{
     establish_connection_pool, DbConnection,
 };
-use magic_collection_registry_backend::provider::scryfall::api::ScryfallSetListResponse;
+use magic_collection_registry_backend::provider::scryfall::api::ScryfallListResponse;
+use magic_collection_registry_backend::provider::scryfall::bulk_data::FileDownloader;
 use magic_collection_registry_backend::provider::scryfall::card::ScryfallCard;
+use magic_collection_registry_backend::provider::scryfall::set::ScryfallSet;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -28,10 +30,6 @@ async fn main() -> io::Result<()> {
         .await
         .expect("An error occurred when loading sets");
     bench(load_cards, "Loading cards", &db_pool).await
-}
-
-fn download_file() -> String {
-    "./cards-full.json".into()
 }
 
 async fn bench<'a, C, F>(closure: C, name: &str, db_pool: &'a DbConnection) -> Result<(), io::Error>
@@ -103,7 +101,9 @@ impl<'a> CardLoader<'a> {
 }
 
 async fn load_cards(db_pool: &DbConnection) -> Result<(), io::Error> {
-    let filepath = download_file();
+    let downloader = FileDownloader::new("cards.json".into());
+    let filepath = downloader.download_file().await;
+
     let reader = BufReader::new(File::open(filepath)?);
 
     let mut cards_loader = CardLoader::new(500, CardService::new(db_pool));
@@ -135,7 +135,7 @@ async fn load_sets(db_pool: &DbConnection) -> Result<(), io::Error> {
 
     let client = reqwest::Client::new();
     let response = client.get(url).send().await.unwrap();
-    let scryfall_sets: ScryfallSetListResponse = response.json().await.unwrap();
+    let scryfall_sets: ScryfallListResponse<ScryfallSet> = response.json().await.unwrap();
 
     let sets: Vec<Set> = scryfall_sets
         .data

@@ -1,8 +1,6 @@
-use crate::provider::scryfall::set::ScryfallSet;
-
 #[derive(serde::Deserialize)]
-pub struct ScryfallSetListResponse {
+pub struct ScryfallListResponse<T> {
     pub object: String,
     pub has_more: bool,
-    pub data: Vec<ScryfallSet>,
+    pub data: Vec<T>,
 }
