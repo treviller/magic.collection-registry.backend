@@ -36,7 +36,6 @@ pub fn test_setup() {
 
     INIT_ENVIRONMENT.call_once(|| {
         load_env_values();
-        load_fixtures();
     });
 }
 
