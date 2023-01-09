@@ -4,10 +4,10 @@ use std::io;
 use std::io::BufReader;
 use std::time::SystemTime;
 
-use dotenvy::dotenv;
 use serde::de::DeserializeOwned;
 use serde_json::Deserializer;
 
+use magic_collection_registry_backend::app::load_environment_values;
 use magic_collection_registry_backend::domain::card::CardService;
 use magic_collection_registry_backend::domain::model::card::Card;
 use magic_collection_registry_backend::domain::model::set::Set;
@@ -22,8 +22,7 @@ use magic_collection_registry_backend::provider::scryfall::set::ScryfallSet;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    dotenv().ok();
-
+    load_environment_values();
     let db_pool = establish_connection_pool();
 
     bench(load_sets, "Loading sets", &db_pool)

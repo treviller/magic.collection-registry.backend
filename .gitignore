@@ -10,3 +10,6 @@ configuration/prod.yaml
 
 cards-slice.json
 cards-full.json
+
+## This is placed to keep infra directory "as is" for now
+infra/

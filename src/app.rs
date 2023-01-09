@@ -1,3 +1,5 @@
+use std::env;
+
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
@@ -17,7 +19,7 @@ pub struct Application {
 
 impl Application {
     pub fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
-        dotenv().ok();
+        load_environment_values();
 
         let subscriber = get_subscriber("info".into());
         initialize_subscriber(subscriber);
@@ -44,7 +46,10 @@ impl Application {
                 .app_data(db_pool.clone())
                 .configure(configure_routing)
         })
-        .bind(("127.0.0.1", 8080))?
+        .bind((
+            env::var("HOST_ADDRESS").expect("HOST_ADDRESS must be set"),
+            8080,
+        ))?
         .run();
 
         Ok(server)
@@ -73,4 +78,8 @@ pub fn initialize_tera() -> Tera {
     };
 
     tera
+}
+
+pub fn load_environment_values() {
+    dotenv().ok();
 }
