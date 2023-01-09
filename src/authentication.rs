@@ -1,3 +1,5 @@
+use std::env;
+
 use anyhow::Context;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
@@ -40,7 +42,9 @@ pub struct AuthenticationService {
 impl AuthenticationService {
     pub fn new(settings: AuthSettings) -> Self {
         Self {
-            jwt_key: settings.jwt_key,
+            jwt_key: Secret::new(
+                env::var("AUTH_JWT_KEY").expect("AUTH_JWT_KEY should be provided"),
+            ),
             jwt_ttl: settings.jwt_ttl,
         }
     }

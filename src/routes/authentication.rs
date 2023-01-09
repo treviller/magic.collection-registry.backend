@@ -89,7 +89,7 @@ pub async fn forgotten_password(
     let mut context = tera::Context::new();
     context.insert(
         "reset_link",
-        &format!("{}/password-reset/{}", config.host, token.id),
+        &format!("{}/password-reset/{}", config.host.full, token.id),
     );
 
     email_client.send_email(

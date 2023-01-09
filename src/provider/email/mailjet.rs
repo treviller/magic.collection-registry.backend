@@ -1,3 +1,5 @@
+use std::env;
+
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 use serde::ser::SerializeStruct;
@@ -22,8 +24,12 @@ impl MailjetClient {
             http_client: Client::builder().timeout(timeout).build().unwrap(),
             sender: config.sender_email,
             base_url: config.base_url,
-            api_key: config.api_key,
-            secret_key: config.secret_key,
+            api_key: Secret::new(
+                env::var("EMAIL_API_KEY").expect("EMAIL_API_KEY should be provided"),
+            ),
+            secret_key: Secret::new(
+                env::var("EMAIL_SECRET_KEY").expect("EMAIL_SECRET_KEY should be provided"),
+            ),
         }
     }
 
@@ -89,11 +95,11 @@ mod tests {
     use claims::{assert_err, assert_ok};
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
-    use fake::{Fake, Faker};
-    use secrecy::Secret;
+    use fake::Fake;
     use wiremock::matchers::{header, header_exists, method, path};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
+    use crate::app::load_environment_values;
     use crate::configuration::settings::EmailSettings;
     use crate::domain::model::user_email::UserEmail;
     use crate::provider::email::mailjet::MailjetClient;
@@ -170,13 +176,12 @@ mod tests {
     }
 
     fn init_email_client(base_url: String) -> MailjetClient {
+        load_environment_values();
         let sender_email = SafeEmail().fake();
 
         MailjetClient::new(EmailSettings {
             base_url,
             sender_email,
-            api_key: Secret::new(Faker.fake()),
-            secret_key: Secret::new(Faker.fake()),
         })
     }
 

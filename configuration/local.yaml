@@ -1,0 +1,6 @@
+host:
+  full: "http://localhost:8080"
+  address: "127.0.0.1"
+  port: 8080
+email:
+  sender_email: "magic@enalla.ovh"

@@ -1,0 +1,4 @@
+host:
+  address: 0.0.0.0
+email:
+  sender_email: "magic@enalla.ovh"

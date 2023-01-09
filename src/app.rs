@@ -1,5 +1,3 @@
-use std::env;
-
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
@@ -46,10 +44,7 @@ impl Application {
                 .app_data(db_pool.clone())
                 .configure(configure_routing)
         })
-        .bind((
-            env::var("HOST_ADDRESS").expect("HOST_ADDRESS must be set"),
-            8080,
-        ))?
+        .bind((configuration.host.address, configuration.host.port))?
         .run();
 
         Ok(server)

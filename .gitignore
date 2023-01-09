@@ -1,11 +1,6 @@
 /target
 
 .idea/
-
-configuration/local.yaml
-
-configuration/prod.yaml
-
 .env
 
 cards-slice.json
