@@ -8,6 +8,7 @@ pub struct CardDto {
     pub name: String,
     pub language: String,
     pub rarity: CardRarity,
+    pub preview_image: Option<String>,
 }
 
 impl From<Card> for CardDto {
@@ -17,6 +18,7 @@ impl From<Card> for CardDto {
             name: card.name,
             language: card.lang,
             rarity: card.rarity,
+            preview_image: card.preview_image,
         }
     }
 }

@@ -1,0 +1,2 @@
+ALTER TABLE cards
+    ADD COLUMN preview_image VARCHAR(255) DEFAULT NULL;

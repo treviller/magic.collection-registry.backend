@@ -16,6 +16,7 @@ pub struct DbCard {
     pub released_at: NaiveDate,
     pub rarity: CardRarity,
     pub set_id: Uuid,
+    pub preview_image: Option<String>,
 }
 
 impl From<Card> for DbCard {
@@ -28,6 +29,7 @@ impl From<Card> for DbCard {
             released_at: card.released_at,
             set_id: card.set_id,
             rarity: card.rarity,
+            preview_image: card.preview_image,
         }
     }
 }
@@ -42,6 +44,7 @@ impl Into<Card> for DbCard {
             released_at: self.released_at,
             set_id: self.set_id,
             rarity: self.rarity,
+            preview_image: self.preview_image,
         }
     }
 }
@@ -50,7 +53,7 @@ pub async fn insert_cards(db_pool: &DbConnection, cards_list: Vec<Card>) {
     let cards_list: Vec<DbCard> = cards_list.into_iter().map(|card| card.into()).collect();
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-        "INSERT INTO cards (id, scryfall_id, name, lang, released_at, set_id, rarity) ",
+        "INSERT INTO cards (id, scryfall_id, name, lang, released_at, set_id, rarity, preview_image) ",
     );
 
     query_builder.push_values(cards_list, |mut builder, card| {
@@ -61,7 +64,8 @@ pub async fn insert_cards(db_pool: &DbConnection, cards_list: Vec<Card>) {
             .push_bind(card.lang)
             .push_bind(card.released_at)
             .push_bind(card.set_id)
-            .push_bind(card.rarity);
+            .push_bind(card.rarity)
+            .push_bind(card.preview_image);
     });
 
     let _result = query_builder

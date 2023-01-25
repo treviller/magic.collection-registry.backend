@@ -26,7 +26,7 @@ pub struct ScryfallCard {
     // _layout: String,
     // _highres_image: bool,
     // _image_status: String,
-    // _image_uris: Option<ImageUris>,
+    image_uris: Option<ImageUris>,
     // _mana_cost: Option<String>,
     // _cmc: Option<f32>,
     // _type_line: Option<String>,
@@ -87,6 +87,7 @@ impl Into<Card> for ScryfallCard {
             released_at: self.released_at,
             set_id: self.set_id,
             rarity: self.rarity,
+            preview_image: self.image_uris.map(|images| images.normal),
         }
     }
 }
@@ -99,12 +100,12 @@ impl std::fmt::Debug for ScryfallCard {
 
 #[derive(serde::Deserialize, Debug)]
 struct ImageUris {
-    _small: String,
-    _normal: String,
-    _large: String,
-    _png: String,
-    _art_crop: String,
-    _border_crop: String,
+    // _small: String,
+    normal: String,
+    // _large: String,
+    // _png: String,
+    // _art_crop: String,
+    // _border_crop: String,
 }
 
 #[derive(serde::Deserialize, Debug)]

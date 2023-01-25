@@ -24,6 +24,7 @@ pub struct Card {
     pub released_at: NaiveDate,
     pub set_id: Uuid,
     pub rarity: CardRarity,
+    pub preview_image: Option<String>,
 }
 
 impl Card {}
