@@ -18,6 +18,7 @@ path = "src/bin/cli.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-cors = "0.6"
 actix-web = "4"
 anyhow = "1"
 argon2 = { version = "0.4", features = ["std"] }

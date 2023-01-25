@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
@@ -39,6 +40,7 @@ impl Application {
         let server = HttpServer::new(move || {
             App::new()
                 .wrap(TracingLogger::default())
+                .wrap(Application::build_cors_configuration())
                 .app_data(config_data.clone())
                 .app_data(tera.clone())
                 .app_data(db_pool.clone())
@@ -48,6 +50,14 @@ impl Application {
         .run();
 
         Ok(server)
+    }
+
+    fn build_cors_configuration() -> Cors {
+        Cors::default()
+            .allowed_origin("http://localhost:3000")
+            .allow_any_method()
+            .allow_any_header()
+            .max_age(3600)
     }
 }
 
