@@ -16,6 +16,7 @@ use crate::errors::api::login::LoginError;
 use crate::errors::api::reset_password::ResetPasswordError;
 use crate::provider::database::DbConnection;
 use crate::provider::email::mailjet::MailjetClient;
+use crate::routes::responses::authentication::LoginResponse;
 
 #[derive(serde::Deserialize)]
 pub struct LoginData {
@@ -44,10 +45,14 @@ pub async fn login(
         .map_err(|e| LoginError::from(e))?;
 
     let tokens = authentication_service
-        .generate_jwt(user)
+        .generate_jwt(&user)
         .map_err(|e| LoginError::from(e))?;
 
-    Ok(HttpResponse::Ok().json(tokens))
+    Ok(HttpResponse::Ok().json(LoginResponse::new(
+        tokens.access_token,
+        "".into(),
+        UserDto::from_user(user),
+    )))
 }
 
 #[derive(serde::Deserialize)]

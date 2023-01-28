@@ -1,5 +1,13 @@
+pub mod authentication;
 pub mod cards;
 pub mod sets;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct AuthenticatedMeta {
+    pub success: bool,
+    pub access_token: String,
+    pub refresh_token: String,
+}
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct ListSuccessMeta {

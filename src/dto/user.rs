@@ -1,6 +1,6 @@
 use crate::domain::model::user::User;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UserDto {
     username: String,
 }

@@ -58,7 +58,7 @@ pub async fn generate_access_token(db_pool: &DbConnection, config: &Settings) ->
     let authentication_service = AuthenticationService::new(config.auth.clone());
     let token = authentication_service
         .generate_jwt(
-            database::user::find_one_by_username(db_pool, "test@email.com".into())
+            &database::user::find_one_by_username(db_pool, "test@email.com".into())
                 .await
                 .unwrap(),
         )

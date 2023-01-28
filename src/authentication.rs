@@ -49,11 +49,11 @@ impl AuthenticationService {
         }
     }
 
-    pub fn generate_jwt(&self, user: User) -> Result<AuthTokens, AuthError> {
+    pub fn generate_jwt(&self, user: &User) -> Result<AuthTokens, AuthError> {
         let encoding_key = EncodingKey::from_secret(self.jwt_key.expose_secret().as_ref());
         let current_timestamp = get_current_timestamp();
         let claims = Claims {
-            sub: user.username,
+            sub: user.username.clone(),
             iat: current_timestamp,
             exp: current_timestamp + self.jwt_ttl,
         };

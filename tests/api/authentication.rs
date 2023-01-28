@@ -8,14 +8,10 @@ use wiremock::{Mock, ResponseTemplate};
 use magic_collection_registry_backend::authentication::AuthenticationService;
 use magic_collection_registry_backend::configuration::loader::get_configuration;
 use magic_collection_registry_backend::provider::database::DbConnection;
+use magic_collection_registry_backend::routes::responses::authentication::LoginResponse;
 
 use crate::helpers;
 use crate::helpers::{generate_access_token, mock_email_server};
-
-#[derive(Debug, serde::Deserialize)]
-pub struct LoginJsonResponse {
-    access_token: String,
-}
 
 #[sqlx::test(fixtures("users", "tokens"))]
 pub async fn login_should_return_200(db_pool: DbConnection) {
@@ -33,10 +29,10 @@ pub async fn login_should_return_200(db_pool: DbConnection) {
     let response = helpers::init_test_app_and_make_request(db_pool, configuration, req).await;
     assert!(response.status().is_success());
 
-    let json: LoginJsonResponse = test::read_body_json(response).await;
+    let json: LoginResponse = test::read_body_json(response).await;
 
     authentication_service
-        .decode_jwt(&json.access_token)
+        .decode_jwt(&json.meta.access_token)
         .expect("Access token should be a valid JWT");
 }
 
