@@ -1,3 +1,5 @@
+use std::env;
+
 use actix_cors::Cors;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
@@ -54,7 +56,7 @@ impl Application {
 
     fn build_cors_configuration() -> Cors {
         Cors::default()
-            .allowed_origin("http://localhost:3000")
+            .allowed_origin(&env::var("FRONT_URL").expect("FRONT_URL value should be set"))
             .allow_any_method()
             .allow_any_header()
             .max_age(3600)
