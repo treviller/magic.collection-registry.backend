@@ -2,8 +2,8 @@ use crate::domain::model::card::Card;
 use crate::errors::domain::DomainError;
 use crate::provider::card::CardFilterParameters;
 use crate::provider::database;
-use crate::provider::database::DbConnection;
-use crate::routes::Pagination;
+use crate::provider::database::{DbConnection, PaginatedResult};
+use crate::routes::PaginationParameters;
 
 pub struct CardService<'a> {
     db_pool: &'a DbConnection,
@@ -21,10 +21,8 @@ impl<'a> CardService<'a> {
     pub async fn list_cards(
         &self,
         filters: CardFilterParameters,
-        pagination: &Pagination,
-    ) -> Result<Vec<Card>, DomainError> {
-        Ok(database::card::get_cards(self.db_pool, filters, pagination)
-            .await
-            .unwrap())
+        pagination: PaginationParameters,
+    ) -> Result<PaginatedResult<Card>, DomainError> {
+        Ok(database::card::get_cards(self.db_pool, &filters, pagination).await)
     }
 }

@@ -1,11 +1,11 @@
 use chrono::NaiveDate;
-use sqlx::{Postgres, QueryBuilder};
+use sqlx::{Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 use crate::domain::model::card::{Card, CardRarity};
 use crate::provider::card::CardFilterParameters;
-use crate::provider::database::DbConnection;
-use crate::routes::Pagination;
+use crate::provider::database::{DbConnection, PaginatedResult};
+use crate::routes::PaginationParameters;
 
 #[derive(sqlx::FromRow)]
 pub struct DbCard {
@@ -77,24 +77,10 @@ pub async fn insert_cards(db_pool: &DbConnection, cards_list: Vec<Card>) {
 
 pub async fn get_cards(
     db_pool: &DbConnection,
-    filters: CardFilterParameters,
-    pagination: &Pagination,
-) -> Result<Vec<Card>, sqlx::Error> {
-    let mut query_builder: QueryBuilder<Postgres> =
-        QueryBuilder::new("SELECT * FROM cards WHERE TRUE");
-
-    if let Some(language) = filters.language {
-        query_builder.push(" AND lang = ");
-        query_builder.push_bind(language);
-    }
-    if let Some(name) = filters.name {
-        query_builder.push(" AND name LIKE ");
-        query_builder.push_bind(format!("%{}%", name));
-    }
-    if let Some(rarity) = filters.rarity {
-        query_builder.push(" AND rarity = ");
-        query_builder.push_bind(rarity);
-    }
+    filters: &CardFilterParameters,
+    pagination: PaginationParameters,
+) -> PaginatedResult<Card> {
+    let mut query_builder = build_cards_query("SELECT * FROM cards WHERE TRUE", filters);
 
     query_builder
         .push(" ORDER BY name ASC LIMIT ")
@@ -102,16 +88,51 @@ pub async fn get_cards(
         .push(" OFFSET ")
         .push_bind(pagination.get_offset() as i32);
 
-    let result = query_builder
+    let cards = query_builder
         .build_query_as::<DbCard>()
         .fetch_all(db_pool)
-        .await;
+        .await
+        .map(|db_cards| db_cards.into_iter().map(|card| card.into()).collect())
+        .unwrap();
 
-    match result {
-        Ok(db_cards) => {
-            let list = db_cards.into_iter().map(|card| card.into()).collect();
-            Ok(list)
-        }
-        Err(_) => Ok(vec![]), //TODO handle error cases
+    PaginatedResult::new(
+        cards,
+        get_cards_count(db_pool, filters).await.unwrap(),
+        pagination,
+    )
+}
+
+pub async fn get_cards_count(
+    db_pool: &DbConnection,
+    filters: &CardFilterParameters,
+) -> Result<i64, sqlx::Error> {
+    let mut query_builder = build_cards_query("SELECT COUNT(*) FROM cards WHERE TRUE", filters);
+
+    query_builder
+        .build()
+        .fetch_one(db_pool)
+        .await
+        .map(|row| row.get(0))
+}
+
+fn build_cards_query<'a>(
+    base_statement: &str,
+    filters: &'a CardFilterParameters,
+) -> QueryBuilder<'a, Postgres> {
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(base_statement);
+
+    if let Some(language) = &filters.language {
+        query_builder.push(" AND lang = ");
+        query_builder.push_bind(language);
     }
+    if let Some(name) = &filters.name {
+        query_builder.push(" AND name LIKE ");
+        query_builder.push_bind(format!("%{}%", name));
+    }
+    if let Some(rarity) = &filters.rarity {
+        query_builder.push(" AND rarity = ");
+        query_builder.push_bind(rarity);
+    }
+
+    query_builder
 }
